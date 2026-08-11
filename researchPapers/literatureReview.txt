@@ -1,0 +1,10 @@
+Identity Documents Authentication based on Forgery Detection of Guilloche Pattern 					2022
+Weakly Supervised Training for Hologram Verification in Identity Documents 						2024
+Synthetic dataset of ID and Travel Documents 										2024
+Identifying fraudulent identity documents by analyzing imprinted guilloche patterns 					2024
+IDNet: A Novel Dataset for Identity Document Analysis and Fraud Detection 						2024
+IDTrust: Deep Identity Document Quality Detection with Bandpass Filtering 						2025	Moderately relatable 
+Optimizing identity documents classification in online systems: A comparative analysis 					2025 
+MIDV-UP: A Dataset of Pakistani and Iranian ID Documents								2025
+Enhancing Document Forgery Detection with Edge-Focused Deep Learning							2025 
+Visual Complexity in Korean Documents: Toward Language-Specific Datasets for Deep Learning-Based Forgery Detection	2025	
