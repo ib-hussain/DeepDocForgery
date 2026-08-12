@@ -1,0 +1,29 @@
+model:
+  dct:
+    stem_channels: 8
+    out_channels: [16, 24, 32]
+    level_names: [s8, s16, s32]
+    consistency_weight: 0.10
+
+  degradation_estimator:
+    metadata_dimension: 8
+    fusion_channels: [16, 24, 32]
+    noise_types: [none, gaussian, poisson, speckle]
+    maximum_noise_strength: 0.20
+
+loss:
+  quality_weight: 1.0
+  double_compression_weight: 1.0
+  noise_type_weight: 1.0
+  noise_strength_weight: 1.0
+
+training:
+  seed: 7
+  steps: 2
+  batch_size: 2
+  height: 64
+  width: 80
+  learning_rate: 0.001
+  weight_decay: 0.0
+  cpu_threads: 2
+

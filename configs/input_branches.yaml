@@ -1,0 +1,25 @@
+model:
+  dct:
+    stem_channels: 32
+    out_channels: [64, 128, 256, 384]
+    level_names: [s8, s16, s32, s64]
+    consistency_weight: 0.10
+
+  degradation_estimator:
+    metadata_dimension: 32
+    fusion_channels: [64, 128, 256, 384]
+    noise_types: [none, gaussian, poisson, speckle]
+    # Strength is standard deviation/amplitude on RGB normalized to [0, 1].
+    maximum_noise_strength: 0.20
+
+loss:
+  quality_weight: 1.0
+  double_compression_weight: 1.0
+  noise_type_weight: 1.0
+  noise_strength_weight: 1.0
+
+training:
+  seed: 7
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+
