@@ -11,6 +11,7 @@ from src.inputLayer.dataModelling import (
     jpeg_quantization_tables,
     make_synthetic_batch,
     read_jpeg_metadata,
+    shuffle_artifact_patches,
 )
 from src.inputLayer.freqFeatures import ExactJPEGDCTReader
 
@@ -51,6 +52,8 @@ def test_synthetic_batch_contract() -> None:
     assert batch.targets.double_compression.shape == (2, 1, 64, 80)
     assert batch.targets.noise_type.shape == (2, 64, 80)
     assert batch.targets.noise_strength.shape == (2, 1, 64, 80)
+    assert batch.tamper_mask.shape == (2, 1, 64, 80)
+    assert set(batch.tamper_mask.unique().tolist()).issubset({0.0, 1.0})
     assert batch.metadata.qtables.shape == (2, 3, 8, 8)
     assert bool((batch.rgb >= 0.0).all() and (batch.rgb <= 1.0).all())
 
@@ -83,3 +86,37 @@ def test_exact_reader_aligns_subsampled_chroma_to_luma_grid(monkeypatch) -> None
     assert result.metadata.subsampling.tolist() == [[0.0, 0.0, 1.0, 0.0]]
     assert result.metadata.qtables[0, 0].unique().item() == 10.0
     assert result.metadata.qtables[0, 1].unique().item() == 20.0
+
+
+def test_internal_patch_shuffle_keeps_image_and_mask_permutations_aligned() -> None:
+    patch_values = torch.arange(8, dtype=torch.float32).reshape(2, 1, 2, 2)
+    rgb = patch_values.repeat_interleave(8, dim=2).repeat_interleave(8, dim=3).repeat(1, 3, 1, 1)
+    mask = patch_values.repeat_interleave(8, dim=2).repeat_interleave(8, dim=3)
+    shuffled = shuffle_artifact_patches(
+        rgb,
+        mask,
+        patch_size=8,
+        mode="internal",
+        generator=torch.Generator().manual_seed(5),
+    )
+    torch.testing.assert_close(shuffled.rgb[:, 0:1], shuffled.artifact_mask)
+    for sample in range(2):
+        assert sorted(shuffled.rgb[sample, 0].unique().tolist()) == sorted(
+            rgb[sample, 0].unique().tolist()
+        )
+
+
+def test_external_patch_shuffle_can_exchange_patches_across_images() -> None:
+    rgb = torch.zeros(2, 3, 16, 16)
+    rgb[1] = 1.0
+    mask = rgb[:, 0:1].clone()
+    shuffled = shuffle_artifact_patches(
+        rgb,
+        mask,
+        patch_size=8,
+        mode="external",
+        generator=torch.Generator().manual_seed(3),
+    )
+    torch.testing.assert_close(shuffled.rgb[:, 0:1], shuffled.artifact_mask)
+    assert set(shuffled.rgb.unique().tolist()) == {0.0, 1.0}
+    assert any(len(shuffled.rgb[index].unique()) > 1 for index in range(2))

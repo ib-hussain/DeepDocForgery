@@ -167,10 +167,105 @@ def load_rgb(path: str | Path) -> Tensor:
 
 
 @dataclass
+class ShuffledPatchBatch:
+    """Image/mask pair after aligned ADN patch shuffling."""
+
+    rgb: Tensor
+    artifact_mask: Tensor
+    mode: str
+    patch_size: int
+
+
+def shuffle_artifact_patches(
+    rgb: Tensor,
+    artifact_mask: Tensor,
+    *,
+    patch_size: int = 32,
+    mode: str = "internal",
+    generator: torch.Generator | None = None,
+) -> ShuffledPatchBatch:
+    """Shuffle aligned image/mask patches for ADN non-text supervision.
+
+    ``internal`` permutes patches independently within every image, disrupting
+    global semantics. ``external`` permutes the complete batch-wide patch pool,
+    making every patch an independently routed training example.  The same
+    permutation is applied to the artifact mask so labels never drift.
+    """
+
+    if rgb.ndim != 4 or rgb.shape[1] != 3:
+        raise ValueError("rgb must have shape [B, 3, H, W]")
+    if artifact_mask.ndim == 3:
+        artifact_mask = artifact_mask.unsqueeze(1)
+    if artifact_mask.ndim != 4 or artifact_mask.shape[1] != 1:
+        raise ValueError("artifact_mask must have shape [B,1,H,W] or [B,H,W]")
+    if rgb.shape[0] != artifact_mask.shape[0] or rgb.shape[-2:] != artifact_mask.shape[-2:]:
+        raise ValueError("rgb and artifact_mask batch/spatial dimensions must match")
+    if patch_size < 1:
+        raise ValueError("patch_size must be positive")
+    if mode not in {"internal", "external"}:
+        raise ValueError("mode must be 'internal' or 'external'")
+
+    height, width = rgb.shape[-2:]
+    pad_h = (-height) % patch_size
+    pad_w = (-width) % patch_size
+    padded_rgb = F.pad(rgb, (0, pad_w, 0, pad_h), mode="replicate")
+    padded_mask = F.pad(artifact_mask.float(), (0, pad_w, 0, pad_h), mode="replicate")
+    grid_h = padded_rgb.shape[-2] // patch_size
+    grid_w = padded_rgb.shape[-1] // patch_size
+
+    def patchify(values: Tensor) -> Tensor:
+        return (
+            values.unfold(2, patch_size, patch_size)
+            .unfold(3, patch_size, patch_size)
+            .permute(0, 2, 3, 1, 4, 5)
+            .reshape(values.shape[0], grid_h * grid_w, values.shape[1], patch_size, patch_size)
+        )
+
+    def unpatchify(patches: Tensor) -> Tensor:
+        batch, _, channels, _, _ = patches.shape
+        return (
+            patches.reshape(batch, grid_h, grid_w, channels, patch_size, patch_size)
+            .permute(0, 3, 1, 4, 2, 5)
+            .reshape(batch, channels, grid_h * patch_size, grid_w * patch_size)
+        )
+
+    rgb_patches = patchify(padded_rgb)
+    mask_patches = patchify(padded_mask)
+    batch, number_of_patches = rgb_patches.shape[:2]
+    if mode == "internal":
+        permutations = [
+            torch.randperm(number_of_patches, device=rgb.device, generator=generator)
+            for _ in range(batch)
+        ]
+        rgb_patches = torch.stack(
+            [rgb_patches[index, order] for index, order in enumerate(permutations)]
+        )
+        mask_patches = torch.stack(
+            [mask_patches[index, order] for index, order in enumerate(permutations)]
+        )
+    else:
+        order = torch.randperm(
+            batch * number_of_patches,
+            device=rgb.device,
+            generator=generator,
+        )
+        rgb_patches = rgb_patches.flatten(0, 1)[order].reshape_as(rgb_patches)
+        mask_patches = mask_patches.flatten(0, 1)[order].reshape_as(mask_patches)
+
+    return ShuffledPatchBatch(
+        rgb=unpatchify(rgb_patches)[:, :, :height, :width],
+        artifact_mask=unpatchify(mask_patches)[:, :, :height, :width],
+        mode=mode,
+        patch_size=patch_size,
+    )
+
+
+@dataclass
 class SyntheticBatch:
     rgb: Tensor
     metadata: JPEGMetadata
     targets: DegradationTargets
+    tamper_mask: Tensor
 
 
 def _document_canvas(
@@ -338,4 +433,9 @@ def make_synthetic_batch(
         jpeg_valid=valid,
         noise_valid=valid,
     )
-    return SyntheticBatch(rgb=degraded, metadata=metadata, targets=targets)
+    return SyntheticBatch(
+        rgb=degraded,
+        metadata=metadata,
+        targets=targets,
+        tamper_mask=patch_mask,
+    )

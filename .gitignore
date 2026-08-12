@@ -8,5 +8,8 @@ dist/
 *.egg-info/
 checkpoints/
 runs/
+data/raw/
+data/processed/
 temp*.*
-data/*
+
+*.zip

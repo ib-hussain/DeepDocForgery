@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deep-doc-forgery"
-version = "0.1.0"
-description = "Frequency and regional degradation input branches for document forgery research"
+version = "0.3.0"
+description = "End-to-end multimodal document forgery detection and localization research pipeline"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
@@ -19,6 +19,8 @@ dependencies = [
 
 [project.optional-dependencies]
 exact-jpeg = ["jpegio>=0.2.8"]
+data = ["lmdb>=1.4"]
+download = ["kaggle>=1.6"]
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [tool.setuptools.packages.find]
