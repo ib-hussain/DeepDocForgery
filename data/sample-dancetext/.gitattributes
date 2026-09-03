@@ -1,0 +1,409 @@
+*.7z filter=lfs diff=lfs merge=lfs -text
+*.arrow filter=lfs diff=lfs merge=lfs -text
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.bin.* filter=lfs diff=lfs merge=lfs -text
+*.bz2 filter=lfs diff=lfs merge=lfs -text
+*.ftz filter=lfs diff=lfs merge=lfs -text
+*.gz filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
+*.joblib filter=lfs diff=lfs merge=lfs -text
+*.lfs.* filter=lfs diff=lfs merge=lfs -text
+*.model filter=lfs diff=lfs merge=lfs -text
+*.msgpack filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.ot filter=lfs diff=lfs merge=lfs -text
+*.parquet filter=lfs diff=lfs merge=lfs -text
+*.pb filter=lfs diff=lfs merge=lfs -text
+*.pt filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.rar filter=lfs diff=lfs merge=lfs -text
+saved_model/**/* filter=lfs diff=lfs merge=lfs -text
+*.tar filter=lfs diff=lfs merge=lfs -text
+*.tar.* filter=lfs diff=lfs merge=lfs -text
+*.mat filter=lfs diff=lfs merge=lfs -text
+*.npz filter=lfs diff=lfs merge=lfs -text
+*.npy filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
+*.hdf5 filter=lfs diff=lfs merge=lfs -text
+*.pickle filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.tflite filter=lfs diff=lfs merge=lfs -text
+*.tgz filter=lfs diff=lfs merge=lfs -text
+*.xz filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.zstandard filter=lfs diff=lfs merge=lfs -text
+*.tfevents* filter=lfs diff=lfs merge=lfs -text
+ 
+*.ark* filter=lfs diff=lfs merge=lfs -text
+**/*ckpt*data* filter=lfs diff=lfs merge=lfs -text
+**/*ckpt*.meta filter=lfs diff=lfs merge=lfs -text
+**/*ckpt*.index filter=lfs diff=lfs merge=lfs -text
+*.safetensors filter=lfs diff=lfs merge=lfs -text
+*.ckpt filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.bmp filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.webp filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.wma filter=lfs diff=lfs merge=lfs -text
+*.aac filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.m4a filter=lfs diff=lfs merge=lfs -text
+*.m3u8 filter=lfs diff=lfs merge=lfs -text
+*.amr filter=lfs diff=lfs merge=lfs -text
+*.audio filter=lfs diff=lfs merge=lfs -text
+*.avi filter=lfs diff=lfs merge=lfs -text
+*.flv filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mpg filter=lfs diff=lfs merge=lfs -text
+*.asf filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+*.mpeg filter=lfs diff=lfs merge=lfs -text
+*.3gp filter=lfs diff=lfs merge=lfs -text
+*.wmv filter=lfs diff=lfs merge=lfs -text
+*.rmvb filter=lfs diff=lfs merge=lfs -text
+*.rm filter=lfs diff=lfs merge=lfs -text
+*.ts filter=lfs diff=lfs merge=lfs -text
+*.mkv filter=lfs diff=lfs merge=lfs -text
+*.flash filter=lfs diff=lfs merge=lfs -text
+*.vob filter=lfs diff=lfs merge=lfs -text
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.ost filter=lfs diff=lfs merge=lfs -text
+*.pst filter=lfs diff=lfs merge=lfs -text
+*.doc filter=lfs diff=lfs merge=lfs -text
+*.docx filter=lfs diff=lfs merge=lfs -text
+*.txt filter=lfs diff=lfs merge=lfs -text
+*.ppt filter=lfs diff=lfs merge=lfs -text
+*.pptx filter=lfs diff=lfs merge=lfs -text
+*.xls filter=lfs diff=lfs merge=lfs -text
+*.xlsx filter=lfs diff=lfs merge=lfs -text
+*.vsd filter=lfs diff=lfs merge=lfs -text
+*.vsdx filter=lfs diff=lfs merge=lfs -text
+*.jsonl filter=lfs diff=lfs merge=lfs -text
+*.json filter=lfs diff=lfs merge=lfs -text
+dataset_infos.json ignore
+*.csv filter=lfs diff=lfs merge=lfs -text
+*.tsv filter=lfs diff=lfs merge=lfs -text
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+training_ah filter=lfs diff=lfs merge=lfs -text
+training_af filter=lfs diff=lfs merge=lfs -text
+training_ao filter=lfs diff=lfs merge=lfs -text
+training_ak filter=lfs diff=lfs merge=lfs -text
+training_aa filter=lfs diff=lfs merge=lfs -text
+training_aj filter=lfs diff=lfs merge=lfs -text
+training_ag filter=lfs diff=lfs merge=lfs -text
+training_ad filter=lfs diff=lfs merge=lfs -text
+training_aq filter=lfs diff=lfs merge=lfs -text
+training_am filter=lfs diff=lfs merge=lfs -text
+training_ap filter=lfs diff=lfs merge=lfs -text
+training_al filter=lfs diff=lfs merge=lfs -text
+training_ai filter=lfs diff=lfs merge=lfs -text
+training_fi filter=lfs diff=lfs merge=lfs -text
+training_ab filter=lfs diff=lfs merge=lfs -text
+training_an filter=lfs diff=lfs merge=lfs -text
+training_ac filter=lfs diff=lfs merge=lfs -text
+training_ar filter=lfs diff=lfs merge=lfs -text
+training_at filter=lfs diff=lfs merge=lfs -text
+training_au filter=lfs diff=lfs merge=lfs -text
+training_aw filter=lfs diff=lfs merge=lfs -text
+training_df filter=lfs diff=lfs merge=lfs -text
+training_dj filter=lfs diff=lfs merge=lfs -text
+training_dl filter=lfs diff=lfs merge=lfs -text
+training_av filter=lfs diff=lfs merge=lfs -text
+training_dk filter=lfs diff=lfs merge=lfs -text
+training_dg filter=lfs diff=lfs merge=lfs -text
+training_bb filter=lfs diff=lfs merge=lfs -text
+training_di filter=lfs diff=lfs merge=lfs -text
+training_ba filter=lfs diff=lfs merge=lfs -text
+training_dn filter=lfs diff=lfs merge=lfs -text
+training_ax filter=lfs diff=lfs merge=lfs -text
+training_as filter=lfs diff=lfs merge=lfs -text
+training_do filter=lfs diff=lfs merge=lfs -text
+training_dh filter=lfs diff=lfs merge=lfs -text
+training_ay filter=lfs diff=lfs merge=lfs -text
+training_bf filter=lfs diff=lfs merge=lfs -text
+training_dm filter=lfs diff=lfs merge=lfs -text
+training_bd filter=lfs diff=lfs merge=lfs -text
+training_be filter=lfs diff=lfs merge=lfs -text
+training_ds filter=lfs diff=lfs merge=lfs -text
+training_bc filter=lfs diff=lfs merge=lfs -text
+training_dp filter=lfs diff=lfs merge=lfs -text
+training_bg filter=lfs diff=lfs merge=lfs -text
+training_dq filter=lfs diff=lfs merge=lfs -text
+training_bi filter=lfs diff=lfs merge=lfs -text
+training_dw filter=lfs diff=lfs merge=lfs -text
+training_bk filter=lfs diff=lfs merge=lfs -text
+training_bj filter=lfs diff=lfs merge=lfs -text
+training_bl filter=lfs diff=lfs merge=lfs -text
+training_dy filter=lfs diff=lfs merge=lfs -text
+training_bh filter=lfs diff=lfs merge=lfs -text
+training_dt filter=lfs diff=lfs merge=lfs -text
+training_dr filter=lfs diff=lfs merge=lfs -text
+training_du filter=lfs diff=lfs merge=lfs -text
+training_dv filter=lfs diff=lfs merge=lfs -text
+training_dx filter=lfs diff=lfs merge=lfs -text
+training_bm filter=lfs diff=lfs merge=lfs -text
+training_ea filter=lfs diff=lfs merge=lfs -text
+training_ec filter=lfs diff=lfs merge=lfs -text
+training_eb filter=lfs diff=lfs merge=lfs -text
+training_bo filter=lfs diff=lfs merge=lfs -text
+training_cl filter=lfs diff=lfs merge=lfs -text
+training_bp filter=lfs diff=lfs merge=lfs -text
+training_dz filter=lfs diff=lfs merge=lfs -text
+training_br filter=lfs diff=lfs merge=lfs -text
+training_cm filter=lfs diff=lfs merge=lfs -text
+training_ed filter=lfs diff=lfs merge=lfs -text
+training_bn filter=lfs diff=lfs merge=lfs -text
+training_bq filter=lfs diff=lfs merge=lfs -text
+training_ef filter=lfs diff=lfs merge=lfs -text
+training_ee filter=lfs diff=lfs merge=lfs -text
+training_bs filter=lfs diff=lfs merge=lfs -text
+training_cg filter=lfs diff=lfs merge=lfs -text
+training_bt filter=lfs diff=lfs merge=lfs -text
+training_cn filter=lfs diff=lfs merge=lfs -text
+training_cq filter=lfs diff=lfs merge=lfs -text
+training_ck filter=lfs diff=lfs merge=lfs -text
+training_eg filter=lfs diff=lfs merge=lfs -text
+training_eh filter=lfs diff=lfs merge=lfs -text
+training_bu filter=lfs diff=lfs merge=lfs -text
+training_bv filter=lfs diff=lfs merge=lfs -text
+training_ek filter=lfs diff=lfs merge=lfs -text
+training_cp filter=lfs diff=lfs merge=lfs -text
+training_ei filter=lfs diff=lfs merge=lfs -text
+training_cr filter=lfs diff=lfs merge=lfs -text
+training_bw filter=lfs diff=lfs merge=lfs -text
+training_el filter=lfs diff=lfs merge=lfs -text
+training_en filter=lfs diff=lfs merge=lfs -text
+training_cs filter=lfs diff=lfs merge=lfs -text
+training_bx filter=lfs diff=lfs merge=lfs -text
+training_ct filter=lfs diff=lfs merge=lfs -text
+training_eo filter=lfs diff=lfs merge=lfs -text
+training_ej filter=lfs diff=lfs merge=lfs -text
+training_ep filter=lfs diff=lfs merge=lfs -text
+training_cy filter=lfs diff=lfs merge=lfs -text
+training_em filter=lfs diff=lfs merge=lfs -text
+training_cv filter=lfs diff=lfs merge=lfs -text
+training_cw filter=lfs diff=lfs merge=lfs -text
+training_cu filter=lfs diff=lfs merge=lfs -text
+training_ca filter=lfs diff=lfs merge=lfs -text
+training_cb filter=lfs diff=lfs merge=lfs -text
+training_es filter=lfs diff=lfs merge=lfs -text
+training_cc filter=lfs diff=lfs merge=lfs -text
+training_da filter=lfs diff=lfs merge=lfs -text
+training_bz filter=lfs diff=lfs merge=lfs -text
+training_cx filter=lfs diff=lfs merge=lfs -text
+training_ae filter=lfs diff=lfs merge=lfs -text
+training_db filter=lfs diff=lfs merge=lfs -text
+training_eq filter=lfs diff=lfs merge=lfs -text
+training_er filter=lfs diff=lfs merge=lfs -text
+training_cz filter=lfs diff=lfs merge=lfs -text
+training_dc filter=lfs diff=lfs merge=lfs -text
+training_et filter=lfs diff=lfs merge=lfs -text
+training_ev filter=lfs diff=lfs merge=lfs -text
+training_cd filter=lfs diff=lfs merge=lfs -text
+training_ew filter=lfs diff=lfs merge=lfs -text
+training_dd filter=lfs diff=lfs merge=lfs -text
+training_eu filter=lfs diff=lfs merge=lfs -text
+training_de filter=lfs diff=lfs merge=lfs -text
+training_ex filter=lfs diff=lfs merge=lfs -text
+training_cf filter=lfs diff=lfs merge=lfs -text
+training_ez filter=lfs diff=lfs merge=lfs -text
+training_ce filter=lfs diff=lfs merge=lfs -text
+training_cj filter=lfs diff=lfs merge=lfs -text
+training_fc filter=lfs diff=lfs merge=lfs -text
+training_ci filter=lfs diff=lfs merge=lfs -text
+training_fj filter=lfs diff=lfs merge=lfs -text
+training_az filter=lfs diff=lfs merge=lfs -text
+training_ch filter=lfs diff=lfs merge=lfs -text
+training_fg filter=lfs diff=lfs merge=lfs -text
+training_fa filter=lfs diff=lfs merge=lfs -text
+training_fh filter=lfs diff=lfs merge=lfs -text
+training_ey filter=lfs diff=lfs merge=lfs -text
+training_fd filter=lfs diff=lfs merge=lfs -text
+training_fe filter=lfs diff=lfs merge=lfs -text
+training_ff filter=lfs diff=lfs merge=lfs -text
+training_fb filter=lfs diff=lfs merge=lfs -text
+training_co filter=lfs diff=lfs merge=lfs -text
+training_by filter=lfs diff=lfs merge=lfs -text
+
+testfake_aa filter=lfs diff=lfs merge=lfs -text
+testfake_ag filter=lfs diff=lfs merge=lfs -text
+testfake_ac filter=lfs diff=lfs merge=lfs -text
+testfake_ai filter=lfs diff=lfs merge=lfs -text
+testfake_al filter=lfs diff=lfs merge=lfs -text
+testfake_ad filter=lfs diff=lfs merge=lfs -text
+testfake_aj filter=lfs diff=lfs merge=lfs -text
+testfake_an filter=lfs diff=lfs merge=lfs -text
+testfake_am filter=lfs diff=lfs merge=lfs -text
+testfake_ak filter=lfs diff=lfs merge=lfs -text
+testfake_ae filter=lfs diff=lfs merge=lfs -text
+testfake_ao filter=lfs diff=lfs merge=lfs -text
+testfake_ah filter=lfs diff=lfs merge=lfs -text
+testfake_ab filter=lfs diff=lfs merge=lfs -text
+testfake_af filter=lfs diff=lfs merge=lfs -text
+
+testtampered_bo filter=lfs diff=lfs merge=lfs -text
+testtampered_bb filter=lfs diff=lfs merge=lfs -text
+testtampered_az filter=lfs diff=lfs merge=lfs -text
+testtampered_be filter=lfs diff=lfs merge=lfs -text
+testtampered_ab filter=lfs diff=lfs merge=lfs -text
+testtampered_bt filter=lfs diff=lfs merge=lfs -text
+testtampered_bq filter=lfs diff=lfs merge=lfs -text
+testtampered_bn filter=lfs diff=lfs merge=lfs -text
+testtampered_ah filter=lfs diff=lfs merge=lfs -text
+testtampered_cz filter=lfs diff=lfs merge=lfs -text
+testtampered_ad filter=lfs diff=lfs merge=lfs -text
+testtampered_bp filter=lfs diff=lfs merge=lfs -text
+testtampered_bc filter=lfs diff=lfs merge=lfs -text
+testtampered_aa filter=lfs diff=lfs merge=lfs -text
+testtampered_ag filter=lfs diff=lfs merge=lfs -text
+testtampered_bs filter=lfs diff=lfs merge=lfs -text
+testtampered_br filter=lfs diff=lfs merge=lfs -text
+testtampered_bu filter=lfs diff=lfs merge=lfs -text
+testtampered_af filter=lfs diff=lfs merge=lfs -text
+testtampered_ao filter=lfs diff=lfs merge=lfs -text
+testtampered_cb filter=lfs diff=lfs merge=lfs -text
+testtampered_ae filter=lfs diff=lfs merge=lfs -text
+testtampered_an filter=lfs diff=lfs merge=lfs -text
+testtampered_ca filter=lfs diff=lfs merge=lfs -text
+testtampered_bw filter=lfs diff=lfs merge=lfs -text
+testtampered_bv filter=lfs diff=lfs merge=lfs -text
+testtampered_al filter=lfs diff=lfs merge=lfs -text
+testtampered_ai filter=lfs diff=lfs merge=lfs -text
+testtampered_ch filter=lfs diff=lfs merge=lfs -text
+testtampered_by filter=lfs diff=lfs merge=lfs -text
+testtampered_bz filter=lfs diff=lfs merge=lfs -text
+testtampered_bx filter=lfs diff=lfs merge=lfs -text
+testtampered_ak filter=lfs diff=lfs merge=lfs -text
+testtampered_ce filter=lfs diff=lfs merge=lfs -text
+testtampered_as filter=lfs diff=lfs merge=lfs -text
+testtampered_am filter=lfs diff=lfs merge=lfs -text
+testtampered_cf filter=lfs diff=lfs merge=lfs -text
+testtampered_cd filter=lfs diff=lfs merge=lfs -text
+testtampered_ap filter=lfs diff=lfs merge=lfs -text
+testtampered_aq filter=lfs diff=lfs merge=lfs -text
+testtampered_ck filter=lfs diff=lfs merge=lfs -text
+testtampered_cg filter=lfs diff=lfs merge=lfs -text
+testtampered_av filter=lfs diff=lfs merge=lfs -text
+testtampered_aw filter=lfs diff=lfs merge=lfs -text
+testtampered_cl filter=lfs diff=lfs merge=lfs -text
+testtampered_cj filter=lfs diff=lfs merge=lfs -text
+testtampered_aj filter=lfs diff=lfs merge=lfs -text
+testtampered_co filter=lfs diff=lfs merge=lfs -text
+testtampered_cp filter=lfs diff=lfs merge=lfs -text
+testtampered_cr filter=lfs diff=lfs merge=lfs -text
+testtampered_bf filter=lfs diff=lfs merge=lfs -text
+testtampered_ba filter=lfs diff=lfs merge=lfs -text
+testtampered_ax filter=lfs diff=lfs merge=lfs -text
+testtampered_ci filter=lfs diff=lfs merge=lfs -text
+testtampered_cu filter=lfs diff=lfs merge=lfs -text
+testtampered_db filter=lfs diff=lfs merge=lfs -text
+testtampered_bh filter=lfs diff=lfs merge=lfs -text
+testtampered_cm filter=lfs diff=lfs merge=lfs -text
+testtampered_au filter=lfs diff=lfs merge=lfs -text
+testtampered_bg filter=lfs diff=lfs merge=lfs -text
+testtampered_at filter=lfs diff=lfs merge=lfs -text
+testtampered_cq filter=lfs diff=lfs merge=lfs -text
+testtampered_cs filter=lfs diff=lfs merge=lfs -text
+testtampered_ar filter=lfs diff=lfs merge=lfs -text
+testtampered_ay filter=lfs diff=lfs merge=lfs -text
+testtampered_bd filter=lfs diff=lfs merge=lfs -text
+testtampered_bl filter=lfs diff=lfs merge=lfs -text
+testtampered_bj filter=lfs diff=lfs merge=lfs -text
+testtampered_cy filter=lfs diff=lfs merge=lfs -text
+testtampered_ac filter=lfs diff=lfs merge=lfs -text
+testtampered_cn filter=lfs diff=lfs merge=lfs -text
+testtampered_ct filter=lfs diff=lfs merge=lfs -text
+testtampered_cv filter=lfs diff=lfs merge=lfs -text
+testtampered_cx filter=lfs diff=lfs merge=lfs -text
+testtampered_bi filter=lfs diff=lfs merge=lfs -text
+testtampered_bk filter=lfs diff=lfs merge=lfs -text
+testtampered_cw filter=lfs diff=lfs merge=lfs -text
+testtampered_da filter=lfs diff=lfs merge=lfs -text
+testtampered_cc filter=lfs diff=lfs merge=lfs -text
+testtampered_bm filter=lfs diff=lfs merge=lfs -text
+
+testreal_ah filter=lfs diff=lfs merge=lfs -text
+testreal_af filter=lfs diff=lfs merge=lfs -text
+testreal_ae filter=lfs diff=lfs merge=lfs -text
+testreal_ai filter=lfs diff=lfs merge=lfs -text
+testreal_ag filter=lfs diff=lfs merge=lfs -text
+testreal_aa filter=lfs diff=lfs merge=lfs -text
+testreal_aj filter=lfs diff=lfs merge=lfs -text
+testreal_ac filter=lfs diff=lfs merge=lfs -text
+testreal_ab filter=lfs diff=lfs merge=lfs -text
+testreal_ad filter=lfs diff=lfs merge=lfs -text
