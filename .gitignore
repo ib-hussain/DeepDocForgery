@@ -8,8 +8,18 @@ dist/
 *.egg-info/
 checkpoints/
 runs/
-data/raw/
-data/processed/
 temp*.*
+
+data/**dataset**/
+data/sample-midv/
+# data/raw/
+# data/processed/
+
+output/logs/
+output/model/
+output/embeddings/
+output/hpo/
+
+archive/
 
 *.zip
