@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.inputLayer.freqFeatures import (
+from deepdocforgery.frequency import (
     DCTFeaturePyramid,
     ExactDCTBatch,
     JPEGMetadata,
@@ -82,7 +82,8 @@ def test_consistency_rejects_misaligned_exact_grid() -> None:
         coefficients=torch.zeros(1, 3, 64, 3, 4),
         metadata=metadata,
     )
-    with pytest.raises(ValueError, match="8-pixel-aligned crop"):
+    # Match the invariant, not incidental wording such as "crop" or "image".
+    with pytest.raises(ValueError, match="8-pixel-aligned"):
         model(
             rgb,
             metadata=metadata,

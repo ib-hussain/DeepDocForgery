@@ -5,10 +5,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from src.hiddenLayers.fusion import DeepDocForgeryFusionFrontEnd
-from src.inputLayer.dataModelling import make_synthetic_batch
-from src.inputLayer.degradationEstimator import MultiScaleDegradationLoss
-from src.inputLayer.spatialFeature import ADNSupervision, ArtifactDecouplingLoss
+from deepdocforgery.degradation import MultiScaleDegradationLoss
+from deepdocforgery.fusion import DeepDocForgeryFusionFrontEnd
+from deepdocforgery.io import make_synthetic_batch
+from deepdocforgery.spatial import ADNSupervision, ArtifactDecouplingLoss
 
 
 def _small_model() -> DeepDocForgeryFusionFrontEnd:
@@ -157,4 +157,3 @@ def test_full_fusion_cuda_forward_and_backward() -> None:
     assert gradient is not None
     assert gradient.device.type == "cuda"
     assert bool(torch.isfinite(gradient).all())
-

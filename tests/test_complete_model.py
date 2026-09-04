@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import torch
 
-from src.inputLayer.dataModelling import make_synthetic_batch
-from src.model import DeepDocForgeryModel
-from src.training.objectives import DeepDocForgeryCriterion, DeepDocForgerySupervision
+from deepdocforgery.io import make_synthetic_batch
+from deepdocforgery.model import DeepDocForgeryModel
+from deepdocforgery.objectives import DeepDocForgeryCriterion, DeepDocForgerySupervision
 
 
 def _small_config() -> dict[str, object]:
@@ -79,6 +79,7 @@ def test_joint_objective_reaches_decoder_and_fusion_attention() -> None:
     gradients = {
         "decoder": model.decoder.segmentation_head[-1].weight.grad,
         "classification": model.decoder.final_classifier.weight.grad,
+        "initial_classification": model.decoder.initial_classifier.weight.grad,
         "fusion": model.front_end.fusion.attention_heads["s8"].local[-1].weight.grad,
         "dct": model.front_end.forensics.dct_branch.initial_fusion[0][0].weight.grad,
         "vit": model.front_end.spatial.vit.patch_stem.projection.weight.grad,
@@ -100,9 +101,26 @@ def test_unlabelled_mask_regions_are_excluded_from_localization_loss() -> None:
         valid_mask=torch.zeros_like(batch.tamper_mask),
     )
     losses = criterion(output, supervision)
-    assert float(losses["main/mask_bce"]) == 0.0
-    assert float(losses["main/mask_dice"]) == 0.0
+    assert float(losses["main/mask_bce"].detach()) == 0.0
+    assert float(losses["main/mask_dice"].detach()) == 0.0
     assert bool(torch.isfinite(losses["total"]))
+
+
+def test_unlabelled_image_class_is_excluded_from_classification_loss() -> None:
+    model = DeepDocForgeryModel.from_config(_small_config()).eval()
+    batch = make_synthetic_batch(batch_size=1, height=64, width=64, seed=81)
+    output = model(batch.rgb, metadata=batch.metadata)
+    criterion = DeepDocForgeryCriterion()
+    supervision = DeepDocForgerySupervision(
+        tamper_mask=batch.tamper_mask,
+        image_label=torch.ones(1, 1),
+        valid_mask=torch.ones_like(batch.tamper_mask),
+        image_valid=torch.zeros(1, 1),
+    )
+    losses = criterion(output, supervision)
+    assert float(losses["main/image"].detach()) == 0.0
+    assert float(losses["main/agreement"].detach()) == 0.0
+    assert float(losses["main/mask_bce"].detach()) > 0.0
 
 
 def test_complete_model_state_dict_round_trip() -> None:

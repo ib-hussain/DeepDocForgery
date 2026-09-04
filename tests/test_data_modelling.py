@@ -6,14 +6,14 @@ import numpy as np
 import torch
 from PIL import Image
 
-from src.inputLayer.dataModelling import (
+from deepdocforgery.frequency import ExactJPEGDCTReader
+from deepdocforgery.io import (
     estimate_quality_from_qtables,
     jpeg_quantization_tables,
     make_synthetic_batch,
     read_jpeg_metadata,
     shuffle_artifact_patches,
 )
-from src.inputLayer.freqFeatures import ExactJPEGDCTReader
 
 
 def test_quantization_tables_track_quality_and_round_trip_estimate() -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 from torch.nn import functional as F
 
-from src.inputLayer.spatialFeature import (
+from deepdocforgery.spatial import (
     ADNSupervision,
     ArtifactDecouplingLoss,
     SpatialFeaturePyramid,
@@ -99,4 +99,3 @@ def test_spatial_config_defaults_resize_to_custom_level_count() -> None:
     with torch.no_grad():
         output = model(torch.rand(1, 3, 32, 40))
     assert output.features["s8"].shape == (1, 8, 4, 5)
-

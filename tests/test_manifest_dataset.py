@@ -7,7 +7,7 @@ import pytest
 import torch
 from PIL import Image
 
-from src.data.manifest import (
+from deepdocforgery.data import (
     ForgeryManifestDataset,
     collate_manifest_samples,
     load_manifest,
@@ -53,9 +53,7 @@ def _manifest(tmp_path: Path) -> Path:
             }
         )
     manifest = tmp_path / "manifest.jsonl"
-    manifest.write_text(
-        "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
-    )
+    manifest.write_text("".join(json.dumps(record) + "\n" for record in records), encoding="utf-8")
     return manifest
 
 
@@ -108,3 +106,46 @@ def test_classification_only_sample_has_no_fake_negative_mask_supervision(
     sample = dataset[0]
     assert float(sample["valid_mask"].sum()) == 0.0
     assert float(sample["tamper_mask"].sum()) == 0.0
+
+
+def test_localization_only_record_disables_image_supervision(tmp_path: Path) -> None:
+    image, mask = _write_sample(tmp_path, "localization-only", True)
+    manifest = tmp_path / "localization.jsonl"
+    manifest.write_text(
+        json.dumps(
+            {
+                "sample_id": "localization-only",
+                "image": image.name,
+                "mask": mask.name,
+                "split": "train",
+                "label": 1,
+                "source_group": "localization-only",
+                "classification_supervised": False,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    dataset = ForgeryManifestDataset(manifest, split="train", image_size=(64, 64))
+    batch = collate_manifest_samples([dataset[0]])
+    assert float(batch.supervision.valid_mask.sum()) > 0.0
+    assert float(batch.supervision.image_valid.sum()) == 0.0
+    assert summarize_manifest(dataset.records)["classification_supervised"] == 0
+
+
+def test_training_crop_keeps_a_positive_and_disables_exact_dct(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    dataset = ForgeryManifestDataset(
+        manifest,
+        split="train",
+        image_size=(64, 64),
+        augment=True,
+        crop_probability=1.0,
+        crop_scale_range=(0.5, 0.5),
+        exact_dct_probability=1.0,
+    )
+    sample = dataset[1]
+    assert float(sample["tamper_mask"].sum()) > 0.0
+    assert sample["transform"].original_width == 26
+    assert sample["transform"].original_height == 18
+    assert sample["exact_dct"] is None

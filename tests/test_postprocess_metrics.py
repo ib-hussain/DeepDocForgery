@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import torch
 
-from src.evaluation.metrics import StreamingForgeryMetrics, binary_auroc
-from src.outputLayer.postprocess import extract_instances
+from deepdocforgery.metrics import StreamingForgeryMetrics, binary_auroc
+from deepdocforgery.postprocess import extract_instances
 
 
 def test_extract_instances_filters_specks_and_returns_boxes() -> None:
@@ -39,3 +39,20 @@ def test_streaming_metrics_are_perfect_for_perfect_predictions() -> None:
     assert result["image/accuracy"] == 1.0
     assert result["image/auroc"] == 1.0
     assert result["instance/f1"] == 1.0
+
+
+def test_streaming_metrics_ignore_unsupervised_image_labels() -> None:
+    target = torch.ones(1, 1, 8, 8)
+    metrics = StreamingForgeryMetrics(minimum_instance_area=1)
+    metrics.update(
+        mask_probability=target,
+        tamper_mask=target,
+        image_probability=torch.ones(1, 1),
+        image_label=torch.ones(1, 1),
+        valid_mask=torch.ones_like(target),
+        image_valid=torch.zeros(1, 1),
+    )
+    result = metrics.compute()
+    assert result["pixel/f1"] == 1.0
+    assert result["image/accuracy"] is None
+    assert result["image/auroc"] is None

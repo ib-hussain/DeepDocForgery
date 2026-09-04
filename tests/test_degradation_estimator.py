@@ -3,11 +3,11 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.inputLayer.dataModelling import make_synthetic_batch
-from src.inputLayer.degradationEstimator import (
+from deepdocforgery.degradation import (
     InputForensicsFrontEnd,
     MultiScaleDegradationLoss,
 )
+from deepdocforgery.io import make_synthetic_batch
 
 
 def _small_model() -> InputForensicsFrontEnd:
