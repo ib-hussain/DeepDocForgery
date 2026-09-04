@@ -1,5 +1,11 @@
 __pycache__/
 *.py[cod]
+*cache/
+.ruff_cache/
+.venv*/
+*.egg-info/
+__pycache__/
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
 .venv/
@@ -8,18 +14,34 @@ dist/
 *.egg-info/
 checkpoints/
 runs/
-temp*.*
 
+
+# User-managed datasets
 data/**dataset**/
 data/sample-midv/
 # data/raw/
 # data/processed/
 
-output/logs/
-output/model/
-output/embeddings/
-output/hpo/
+# Generated artefacts (folder documentation remains tracked)
+output/**/*.json
+output/**/*.jsonl
+output/**/*.yaml
+output/**/*.pt
+output/**/*.pth
+output/**/*.ckpt
+output/**/*.png
+output/**/*.jpg
+output/**/*.jpeg
+output/**/*.npy
+output/**/*.npz
+output/**/*.csv
+output/processed/
+# output/logs/
+# output/mainfests/
+# output/model/
+# output/embeddings/
+# output/hpo/
 
 archive/
-
+temp*.*
 *.zip

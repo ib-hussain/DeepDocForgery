@@ -1,0 +1,11 @@
+model:
+  dct: {stem_channels: 8, out_channels: [16, 24, 32], level_names: [s8, s16, s32]}
+  degradation_estimator: {metadata_dimension: 8, fusion_channels: [16, 24, 32], noise_types: [none, gaussian, poisson, speckle]}
+  spatial:
+    out_channels: [16, 24, 32]
+    level_names: [s8, s16, s32]
+    vit: {backend: native, stem_channels: 12, depths: [1, 1, 1], number_of_heads: [2, 3, 4], window_size: 4}
+    adn: {stem_channels: 12, depths: [1, 1, 1]}
+  fusion: {out_channels: [16, 24, 32], refinement_depth: 1}
+  decoder: {channels: 24, class_dimension: 32, refinement_depth: 1, dropout: 0.0}
+training: {seed: 7, cpu_threads: 2}

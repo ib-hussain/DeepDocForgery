@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deep-doc-forgery"
+version = "0.4.2"
+description = "Combined DocTamper and MIDV-DM document-forgery research pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "DeepDocForgery contributors" }]
+dependencies = [
+  "numpy>=1.26",
+  "Pillow>=10.0",
+  "PyYAML>=6.0",
+  "torch>=2.2",
+]
+
+[project.optional-dependencies]
+exact-jpeg = ["jpegio>=0.2.8"]
+data = ["lmdb>=1.4"]
+download = ["kaggle>=1.6"]
+cuda = ["timm>=1.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+deepdocforgery = "deepdocforgery.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepdocforgery*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+pythonpath = ["."]
+testpaths = ["tests"]
+cache_dir = "output/logs/pytest-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+cache-dir = "output/logs/ruff-cache"
+extend-exclude = ["src", "scripts", ".validation-venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

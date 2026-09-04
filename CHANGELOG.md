@@ -1,0 +1,71 @@
+# Changelog
+
+## 0.4.2
+
+- Made protocol tests completely independent of user-managed dataset folders.
+- Added explicit coverage for native `2268x4032` MIDV image/mask geometry.
+- Moved generated manifests and DocTamper exports from `data/` into `output/`.
+- Added persistent preparation, doctor, smoke, and default evaluation reports.
+- Removed all dataset bytes from the distributable release.
+
+## 0.4.1
+
+- Made the exact-DCT exception test assert the alignment invariant rather than
+  incidental exception wording.
+- Made the supplied MIDV trio test coexist with larger local CPU samples.
+- Removed a test-only tensor-to-scalar autograd warning.
+
+## 0.4.0
+
+- Consolidated all Python code under `deepdocforgery/` and one CLI.
+- Added combined DocTamper + MIDV-DM preparation with source-group safety.
+- Added separate CPU sample and approximately 20 GiB CUDA full profiles.
+- Corrected DocTamper official split and positive-only classification handling.
+- Added exact-DCT/fallback mixed batches and JPEG/noise augmentation targets.
+- Added a pretrained timm backbone option and stride-2 decoder detail path.
+- Added tamper-aware crops, positive-pixel weighting, masked perceptual
+  DocTamper grouping, and pretrained-backbone input normalisation.
+- Added branch supervision counts, initial/final classifier losses, image FPR,
+  scheduler-resume safety, and best-epoch HPO selection.
+- Made ADN supervision explicit; missing labels no longer alias tamper masks.
+- Added per-image, failure-tail, area-bucket, baseline, instance, and
+  per-benchmark evaluation.
+- Added diagnostics, HPO, setup scripts, folder documentation, and regression
+  tests based on the supplied MIDV image/mask/JSON contract.
+
+## 0.3.1 — DocTamper benchmark-split and supervision correction
+
+- Preserved TestingSet, FCD, and SCD as separate test-only benchmarks.
+- Restricted optimization to TrainingSet with a deterministic validation holdout.
+- Added per-record `classification_supervised` masking for positive-only datasets.
+- Excluded unsupervised image labels from classification loss, agreement, and image metrics.
+- Added resumable/reusable preparation for the complete four-subset release.
+- Added command-line manifest overrides and a CPU-only DocTamper sanity configuration.
+- Added regression and miniature-LMDB end-to-end validation for the corrected policies.
+
+## 0.3.0 — complete end-to-end research pipeline
+
+- Replaced the temporary fusion probe with a clean-room synergy denoising decoder.
+- Added image classification, pixel localization, boundaries, confidence, and instances.
+- Added bidirectional trainable classification/localization conditioning.
+- Added the complete joint objective and fixed-threshold research metrics.
+- Added JSONL datasets, letterboxing, source-group leakage validation, and manifest merging.
+- Added a 24-image generated demo dataset and reproducible generator.
+- Added generic folder and authorized DocTamper LMDB preparation.
+- Added training, atomic checkpoints, resume, evaluation, and inference commands.
+- Added research/demo configurations and real-data/reproducibility guides.
+
+## 0.2.0 — spatial features and attention fusion
+
+- Added hierarchical windowed ViT features.
+- Added ConvNeXt-style Artifact Decouple Network (ADN) features and auxiliary mask.
+- Added ADN supervision objectives and aligned internal/external patch shuffling.
+- Added learned ViT/ADN channel attention.
+- Added trainable regional attention over spatial, DCT, and degradation evidence.
+- Extended configs, smoke training, documentation, attribution, and tests.
+
+## 0.1.0 — DCT and degradation estimator
+
+- Added exact JPEG coefficients with differentiable pixel-DCT fallback.
+- Added multi-scale dense DCT features and consistency loss.
+- Added regional JPEG/noise degradation estimation, tests, and CPU/CUDA smoke paths.

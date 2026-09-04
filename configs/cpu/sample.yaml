@@ -1,0 +1,37 @@
+data:
+  manifest: output/manifests/cpu.jsonl
+  batch_size: 1
+  num_workers: 0
+  image_size: [384, 384]
+  exact_dct_probability: 0.0
+  augmentation:
+    enabled: true
+    horizontal_flip_probability: 0.5
+    crop_probability: 0.25
+    crop_scale_range: [0.70, 1.0]
+    jpeg_probability: 0.35
+    jpeg_quality_range: [60, 95]
+    gaussian_noise_probability: 0.15
+    gaussian_noise_maximum: 0.02
+model:
+  dct: {stem_channels: 16, out_channels: [32, 64, 128], level_names: [s8, s16, s32]}
+  degradation_estimator: {metadata_dimension: 16, fusion_channels: [32, 64, 128], noise_types: [none, gaussian, poisson, speckle]}
+  spatial:
+    out_channels: [32, 64, 128]
+    level_names: [s8, s16, s32]
+    vit: {backend: native, stem_channels: 24, depths: [1, 1, 2], number_of_heads: [2, 4, 8], window_size: 8}
+    adn: {stem_channels: 24, depths: [1, 1, 2]}
+  fusion: {out_channels: [32, 64, 128], refinement_depth: 1}
+  decoder: {channels: 64, class_dimension: 128, refinement_depth: 1, dropout: 0.1}
+loss:
+  main: {positive_pixel_weight: 1.5, topk_fraction: 0.01}
+training:
+  seed: 7
+  cpu_threads: 4
+  epochs: 2
+  learning_rate: 0.0003
+  minimum_learning_rate: 0.000001
+  gradient_accumulation_steps: 2
+  output_dir: output/model/cpu-sample
+  selection_metric: pixel_macro/f1_forged
+metrics: {threshold: 0.5, catastrophic_f1_threshold: 0.1}
