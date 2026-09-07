@@ -45,3 +45,5 @@ output/processed/
 archive/
 temp*.*
 *.zip
+.git-credentials
+.github/.git-credentials
