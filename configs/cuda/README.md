@@ -7,3 +7,11 @@
 
 Run `python -m deepdocforgery doctor --profile cuda` before training.
 The generated manifest is `output/manifests/cuda.jsonl`.
+
+The full profile declares preflight limits for total/free VRAM and idle GPU
+utilisation. The doctor enforces them before a long run begins.
+
+Progress reports host RAM plus allocated, reserved, peak, free, and total VRAM,
+as well as GPU utilisation and temperature when `nvidia-smi` is available.
+Data-loader workers are auto-sized from the host CPU; model compute remains on
+CUDA with AMP and gradient checkpointing.

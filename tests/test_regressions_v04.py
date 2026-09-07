@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 import torch
@@ -145,3 +146,20 @@ def test_cpu_and_cuda_profiles_are_separate() -> None:
     assert cuda["model"]["spatial"]["vit"]["backend"] == "timm"
     assert cuda["data"]["batch_size"] > cpu["data"]["batch_size"]
     assert cuda["training"]["amp"] is True
+    assert cpu["training"]["cpu_threads"] == "auto"
+    assert cuda["training"]["cpu_threads"] == "auto"
+    assert cpu["data"]["num_workers"] == "auto"
+    assert cuda["data"]["num_workers"] == "auto"
+    assert cpu["logging"]["resource_interval_batches"] > 0
+    assert cuda["logging"]["resource_interval_batches"] > 0
+    assert cuda["runtime"]["minimum_free_vram_gib"] == 16.0
+
+
+def test_setup_scripts_check_dependencies_and_isolate_legacy_environments() -> None:
+    for profile in ("cpu", "cuda"):
+        script = Path(f"setup/{profile}.sh").read_text(encoding="utf-8")
+        assert "pip check" in script
+        assert ".deepdocforgery-profile" in script
+        assert "output/logs/setup" in script
+        assert "Cannot clear the active environment" in script
+        assert "include-system-site-packages = true" in script

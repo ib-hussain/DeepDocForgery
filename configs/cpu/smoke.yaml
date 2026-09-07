@@ -8,4 +8,5 @@ model:
     adn: {stem_channels: 12, depths: [1, 1, 1]}
   fusion: {out_channels: [16, 24, 32], refinement_depth: 1}
   decoder: {channels: 24, class_dimension: 32, refinement_depth: 1, dropout: 0.0}
-training: {seed: 7, cpu_threads: 2}
+training: {seed: 7, cpu_threads: auto}
+logging: {resource_interval_batches: 1}

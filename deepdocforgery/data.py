@@ -30,6 +30,7 @@ from deepdocforgery.spatial import ADNSupervision
 VALID_SPLITS = ("train", "val", "test")
 VALID_ADN_SUPERVISION = ("none", "proxy", "ground_truth")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
+ASPECT_RATIO_TOLERANCE = 1e-3
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,7 @@ class ManifestRecord:
     double_compression: bool | None = None
     noise_type: str | int | None = None
     noise_strength: float | None = None
+    mask_scale_aligned: bool = False
 
     @classmethod
     def from_dict(cls, value: dict[str, Any], *, line_number: int) -> ManifestRecord:
@@ -99,6 +101,9 @@ class ManifestRecord:
         noise_strength = value.get("noise_strength")
         if noise_strength is not None and float(noise_strength) < 0:
             raise ValueError(f"Manifest line {line_number} noise_strength must be non-negative")
+        mask_scale_aligned = value.get("mask_scale_aligned", False)
+        if not isinstance(mask_scale_aligned, bool):
+            raise ValueError(f"Manifest line {line_number} mask_scale_aligned must be boolean")
         return cls(
             sample_id=sample_id,
             image=str(value["image"]),
@@ -117,6 +122,7 @@ class ManifestRecord:
             double_compression=(None if double_compression is None else double_compression),
             noise_type=value.get("noise_type"),
             noise_strength=(None if noise_strength is None else float(noise_strength)),
+            mask_scale_aligned=mask_scale_aligned,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -138,6 +144,7 @@ class ManifestRecord:
             "double_compression": self.double_compression,
             "noise_type": self.noise_type,
             "noise_strength": self.noise_strength,
+            "mask_scale_aligned": self.mask_scale_aligned,
         }
         return {key: value for key, value in values.items() if value is not None}
 
@@ -219,6 +226,7 @@ def summarize_manifest(records: list[ManifestRecord]) -> dict[str, Any]:
         "localization_supervised": sum(record.localization_supervised for record in records),
         "classification_supervised": sum(record.classification_supervised for record in records),
         "adn_supervision": dict(Counter(record.adn_supervision for record in records)),
+        "scale_aligned_masks": sum(record.mask_scale_aligned for record in records),
         "degradation_supervised": sum(
             record.jpeg_quality is not None
             or record.noise_type is not None
@@ -240,6 +248,33 @@ class LetterboxTransform:
     target_width: int
 
 
+def same_aspect_ratio(
+    first: tuple[int, int],
+    second: tuple[int, int],
+    *,
+    tolerance: float = ASPECT_RATIO_TOLERANCE,
+) -> bool:
+    """Return whether two ``(width, height)`` geometries differ only by scale."""
+
+    first_width, first_height = first
+    second_width, second_height = second
+    if min(first_width, first_height, second_width, second_height) < 1:
+        return False
+    first_cross = first_width * second_height
+    second_cross = second_width * first_height
+    return abs(first_cross - second_cross) / max(first_cross, second_cross) <= tolerance
+
+
+def align_mask_to_image(mask: Image.Image, image_size: tuple[int, int]) -> Image.Image:
+    """Scale a spatial target onto its image grid without changing geometry."""
+
+    if mask.size == image_size:
+        return mask
+    if not same_aspect_ratio(mask.size, image_size):
+        raise ValueError(f"Image/mask aspect-ratio mismatch: image={image_size}, mask={mask.size}")
+    return mask.resize(image_size, Image.Resampling.NEAREST)
+
+
 def letterbox_pair(
     image: Image.Image,
     mask: Image.Image | None,
@@ -253,6 +288,8 @@ def letterbox_pair(
     if min(target_height, target_width) < 1:
         raise ValueError("target_size dimensions must be positive")
     original_width, original_height = image.size
+    if mask is not None and not same_aspect_ratio(image.size, mask.size):
+        raise ValueError(f"Image/mask aspect-ratio mismatch: image={image.size}, mask={mask.size}")
     scale = min(target_width / original_width, target_height / original_height)
     resized_width = max(1, int(round(original_width * scale)))
     resized_height = max(1, int(round(original_height * scale)))
@@ -452,6 +489,14 @@ class ForgeryManifestDataset(Dataset[dict[str, Any]]):
         if adn_path is not None:
             with Image.open(adn_path) as adn_file:
                 adn_mask = adn_file.convert("L")
+        # MIDV-DM distributes some masks on a lower-resolution grid than its
+        # 2268x4032 photographs. Their aspect ratios are identical, so nearest
+        # neighbour scaling preserves the labelled coordinates before any
+        # shared crop/flip augmentation is applied.
+        if mask is not None:
+            mask = align_mask_to_image(mask, image.size)
+        if adn_mask is not None:
+            adn_mask = align_mask_to_image(adn_mask, image.size)
 
         augmented = False
         jpeg_quality: float | None = record.jpeg_quality

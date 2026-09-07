@@ -12,8 +12,14 @@
 - Run spatial-only, frequency-only, degradation-only, and combined ablations
   under the same split and budget.
 - Keep all generated run evidence beneath `output/`; keep `data/` input-only.
+- Preserve the command `.log`, event `.jsonl`, `latest.json`, model
+  `status.json`, and epoch `metrics.jsonl` files for every reported run.
 - Inspect `supervision_draws`, `main/image_initial`, and `main/image_final` in
   every epoch log before claiming that an architectural branch was exercised.
+
+Automatic CPU sizing respects process affinity and is recorded in every run.
+For strict comparisons, either retain `auto` on equivalent hardware or pin
+explicit `cpu_threads` and `num_workers` values in the archived YAML.
 
 `training.deterministic: true` enables deterministic PyTorch algorithms where
 available, but exact equality across hardware and releases is not guaranteed.

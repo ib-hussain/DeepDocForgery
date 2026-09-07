@@ -16,6 +16,8 @@ COMMANDS = {
     "evaluate": "deepdocforgery.evaluate",
     "infer": "deepdocforgery.infer",
     "hpo": "deepdocforgery.hpo",
+    "test": "deepdocforgery.evaluate",
+    "status": "deepdocforgery.status",
 }
 
 

@@ -1,10 +1,28 @@
-# DeepDocForgery 0.4.2
+# DeepDocForgery 0.5.0
 
 DeepDocForgery is a research pipeline for joint document-level forgery
 classification and pixel-level tamper localization. It trains through one
 manifest while preserving the different roles of DocTamper and MIDV-DM.
 
-## What changed in 0.4
+## What changed in 0.5
+
+- Every long operation has a `tqdm` progress bar and timestamped status events.
+- Prepare, doctor, smoke, train, validation/test, HPO, and inference persist a
+  readable log plus structured JSONL events beneath `output/logs/<command>/`.
+- CPU thread and worker counts use `auto` by default. Torch uses every logical
+  CPU available through process affinity; data workers are bounded by physical
+  cores and use one Torch thread each to prevent oversubscription.
+- Live telemetry shows process/system RAM on every device and allocated,
+  reserved, peak, free, and total VRAM on CUDA. When `nvidia-smi` is present it
+  also records GPU utilisation, temperature, power, and competing processes.
+- Training maintains `output/model/<run>/status.json`; `deepdocforgery status`
+  summarises the latest command and training states.
+- Final results remain clean JSON on stdout; human progress goes to stderr, so
+  commands remain scriptable.
+- Run-start events record Python, PyTorch, CUDA-runtime, and platform versions
+  alongside the resolved configuration/checkpoint paths for reproducibility.
+
+The 0.4 scientific and data-protocol corrections remain in place:
 
 - All Python code lives in `deepdocforgery/` behind one CLI.
 - `prepare --profile cpu|cuda` indexes both datasets together.
@@ -43,6 +61,47 @@ manifest while preserving the different roles of DocTamper and MIDV-DM.
 | `output/` | Checkpoints, metrics, inference artifacts, and HPO results |
 | `third_party/` | Attribution and third-party notices |
 
+## Logs and live status
+
+Each command prints concise progress such as loss, learning rate, RAM, process
+RSS, and (on CUDA) VRAM. Detailed metric dictionaries are written to files
+instead of flooding the terminal. Epoch/test summaries keep macro F1,
+precision, recall, catastrophic-miss rate, and image AUROC visible.
+
+```text
+output/logs/train/<run-id>.log       human-readable events
+output/logs/train/<run-id>.jsonl     structured events and resource samples
+output/logs/train/latest.json        latest train command status
+output/model/<name>/metrics.jsonl    complete metrics for every epoch
+output/model/<name>/status.json      running/succeeded/failed model status
+```
+
+Each `latest.json` changes to `running` as soon as its command starts and is
+atomically refreshed at progress events, so `status` can inspect active work as
+well as completed and failed work.
+
+| Command | Current status | Primary result |
+|---|---|---|
+| `prepare` | `output/logs/prepare/latest.json` | `output/manifests/*.jsonl` |
+| `doctor` | `output/logs/doctor/latest.json` | `output/logs/doctor-*.json` |
+| `hpo` | `output/logs/hpo/latest.json` | `output/hpo/<run-id>/summary.json` |
+| `train` | `output/model/<name>/status.json` | checkpoints and `metrics.jsonl` |
+| `test` | `output/logs/test/latest.json` | `output/logs/test-metrics.json` |
+| `evaluate` | `output/logs/evaluate/latest.json` | requested evaluation report |
+| `infer` | `output/logs/infer/latest.json` | `output/inference/predictions.json` |
+
+Inspect all latest states at any time:
+
+```bash
+python -m deepdocforgery status
+```
+
+The status command exits with code `2` when work is missing, still running,
+failed, interrupted, or completed with warnings, making it usable in scripts.
+
+Use `--no-progress` on prepare, doctor, smoke, train, test/evaluate, HPO, or
+inference when redirecting output in CI. Persistent logs are still written.
+
 ## CPU quick start
 
 ```bash
@@ -59,14 +118,24 @@ python -m deepdocforgery train \
   --output output/model/cpu-sample
 ```
 
+The CPU profile deliberately uses the sample datasets, but it no longer leaves
+cores idle: `cpu_threads: auto` and `num_workers: auto` are resolved from the
+CPUs actually available to the process. Torch, OpenMP, MKL, OpenBLAS, NumExpr,
+Accelerate, and BLIS receive the same resolved limit; each data worker is then
+restricted to one compute thread to avoid multiplying that limit.
+
 CPU preparation reads your local `data/sample-doctamper` and
 `data/sample-midv` trees. Dataset bytes are deliberately not distributed in
 the code archive. Tests create isolated temporary fixtures and never inspect,
 modify, or make assumptions about these directories.
 
-MIDV's `2268x4032` portrait images are letterboxed to `288x512` inside the
-configured `512x512` canvas. Images and masks always share the exact transform,
-and padding is excluded from losses and metrics.
+MIDV's `2268x4032` portrait images are letterboxed without distortion: to
+`216x384` inside the CPU `384x384` canvas and to `288x512` inside the CUDA
+`512x512` canvas. MIDV masks may be stored at `1152x2048`; preparation accepts
+that exact scale-aligned geometry, records it in the manifest, and the loader
+uses nearest-neighbour alignment before shared crop/flip augmentation. A true
+aspect-ratio mismatch remains a hard error. Padding is excluded from losses
+and metrics.
 
 ## CUDA full-data start
 
@@ -105,6 +174,11 @@ gradient accumulation 4 (effective batch 16), AMP, checkpointed Swin-T, and
 rate. If the first real batch runs out of memory, lower physical
 batch size to 3 or 2 and increase accumulation to preserve the effective batch.
 
+The CUDA doctor requires at least 16 GiB free before this profile starts. It
+exits with status `2` when another compute job (for example `hashcat`) is using
+the GPU or utilisation is already high. Stop that workload and rerun `doctor`;
+do not make the training process compete for VRAM.
+
 ## HPO
 
 HPO is CUDA-only and intentionally small:
@@ -117,13 +191,20 @@ python -m deepdocforgery hpo \
   --output output/hpo
 ```
 
+Each invocation creates its own `output/hpo/<run-id>/` directory, preventing a
+rerun from mixing trial metrics or overwriting an earlier search.
+
 Run HPO only after `doctor --profile cuda` and a one-epoch bounded training
 run succeed on the real datasets.
 
-## Evaluate and infer
+Training also refuses to mix a fresh run with an existing model directory.
+Choose a new `--output` path, or resume the existing run explicitly with
+`--resume output/model/<name>/last.pt`.
+
+## Test, evaluate, and infer
 
 ```bash
-python -m deepdocforgery evaluate \
+python -m deepdocforgery test \
   --config configs/cuda/full.yaml \
   --checkpoint output/model/cuda-full/best.pt \
   --split test \
@@ -136,6 +217,9 @@ python -m deepdocforgery infer \
   --output output/inference \
   --device cuda
 ```
+
+`test` is an alias for `evaluate --split test`; `evaluate` remains available
+for explicit train/validation diagnostics. Both show progress and RAM/VRAM.
 
 `infer --exact-jpeg --native-size` is an expert option. It preserves a JPEG’s
 coefficient grid but can consume much more memory for large MIDV photographs;

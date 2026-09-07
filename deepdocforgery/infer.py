@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +16,15 @@ from deepdocforgery.io import load_yaml, read_jpeg_metadata
 from deepdocforgery.model import DeepDocForgeryModel
 from deepdocforgery.postprocess import extract_instances
 from deepdocforgery.runtime import load_checkpoint, resolve_device
+from deepdocforgery.telemetry import (
+    RunLogger,
+    compact_resources,
+    configure_compute,
+    print_result,
+    reset_peak_memory,
+    resource_snapshot,
+    write_json_atomic,
+)
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
 
@@ -46,6 +54,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Run all images at native resolution instead of configured letterboxing",
     )
+    parser.add_argument("--log-dir", type=Path, default=Path("output/logs"))
+    parser.add_argument("--no-progress", action="store_true")
     return parser.parse_args()
 
 
@@ -104,8 +114,7 @@ def _save_visuals(
     return probability_path, binary_path, overlay_path
 
 
-def main() -> None:
-    args = parse_args()
+def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
     raw_checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     if args.config is None:
         config = raw_checkpoint.get("config")
@@ -114,6 +123,22 @@ def main() -> None:
     else:
         config = load_yaml(args.config)
     device = resolve_device(args.device)
+    compute = configure_compute(
+        device,
+        cpu_threads=config.get("training", {}).get("cpu_threads", "auto"),
+    )
+    reset_peak_memory(device)
+    paths = _paths(args.input)
+    run.info(
+        f"Inference started: {len(paths)} images on {device} | "
+        f"CPU threads={compute['torch_threads']}",
+        event="inference_started",
+        images=len(paths),
+        device=str(device),
+        checkpoint=str(args.checkpoint.resolve()),
+        compute=compute,
+    )
+    run.resource(device, event="resources_initial")
     model = (
         DeepDocForgeryModel.from_config(config.get("model", {}), load_pretrained=False)
         .to(device)
@@ -126,7 +151,13 @@ def main() -> None:
     exact_reader = ExactJPEGDCTReader() if args.exact_jpeg else None
     records: list[dict[str, object]] = []
 
-    for index, image_path in enumerate(_paths(args.input)):
+    progress = run.progress(
+        enumerate(paths),
+        total=len(paths),
+        description="Inference",
+        unit="image",
+    )
+    for index, image_path in progress:
         with Image.open(image_path) as image_file:
             original = image_file.convert("RGB")
         exact = None
@@ -192,10 +223,54 @@ def main() -> None:
                 },
             }
         )
-    result = {"status": "ok", "checkpoint": str(args.checkpoint.resolve()), "results": records}
+        completed = index + 1
+        if completed == len(paths) or completed % 10 == 0:
+            snapshot = resource_snapshot(device)
+            progress.set_postfix_str(compact_resources(snapshot), refresh=False)
+            run.event(
+                "inference_progress",
+                f"Inference: {completed}/{len(paths)} images | {compact_resources(snapshot)}",
+                completed=completed,
+                total=len(paths),
+                resources=snapshot,
+            )
+    progress.close()
+    result = {
+        "status": "ok",
+        "checkpoint": str(args.checkpoint.resolve()),
+        "results": records,
+        "resources": resource_snapshot(device),
+        "text_log": str(run.text_path),
+        "events_log": str(run.events_path),
+    }
     report = output_dir / "predictions.json"
-    report.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"status": "ok", "images": len(records), "report": str(report)}, indent=2))
+    write_json_atomic(report, result)
+    summary = {
+        "status": "ok",
+        "images": len(records),
+        "report": str(report),
+        "resources": result["resources"],
+        "text_log": str(run.text_path),
+        "events_log": str(run.events_path),
+    }
+    run.finish(
+        "succeeded",
+        images=len(records),
+        report=str(report),
+        resources=result["resources"],
+    )
+    return summary
+
+
+def main() -> None:
+    args = parse_args()
+    with RunLogger(
+        "infer",
+        log_root=args.log_dir,
+        progress_enabled=not args.no_progress,
+    ) as run:
+        result = _infer(args, run)
+    print_result(result)
 
 
 if __name__ == "__main__":

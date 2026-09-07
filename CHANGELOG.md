@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.5.0
+
+- Added one shared observability layer for every executable command.
+- Added `tqdm` progress for preparation, doctor checks, smoke, training,
+  validation/testing, HPO, and inference.
+- Added timestamped human `.log` and structured `.jsonl` events plus
+  per-command `latest.json` status reports.
+- Added live process/system RAM telemetry and CUDA allocated, reserved, peak,
+  free, used, and total VRAM telemetry.
+- Added affinity-aware automatic CPU thread selection and physical-core-aware
+  preparation/DataLoader workers with oversubscription protection.
+- Added model-run `status.json`, failure/interruption recording, concise epoch
+  summaries, duration/throughput metrics, class-imbalance warnings, and atomic
+  status writes.
+- Isolated each HPO invocation beneath its own run directory and prevented
+  fresh training from silently appending to an existing experiment.
+- Kept HPO stdout machine-readable by saving each child trainer's JSON result
+  inside its trial while leaving live progress on stderr.
+- Added first-class `test` and `status` CLI commands.
+- Added telemetry and lifecycle regression tests.
+- Accepted MIDV high-resolution-image/lower-resolution-mask pairs only when
+  their aspect ratios are scale-aligned; alignment happens before shared
+  augmentation and the count is reported during preparation.
+- Added GPU utilisation, temperature, power and competing-process telemetry;
+  the CUDA doctor now blocks a busy or low-free-VRAM training launch.
+- Setup now logs full transcripts, cleans unmarked legacy virtual environments,
+  rejects unsafe active-environment clearing, checks dependency consistency,
+  and validates the test suite.
+- Evaluation throughput now records the number of batches actually processed,
+  and doctor verifies required splits, both datasets, and localization labels.
+
 ## 0.4.2
 
 - Made protocol tests completely independent of user-managed dataset folders.

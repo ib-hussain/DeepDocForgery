@@ -5,8 +5,10 @@ from __future__ import annotations
 import math
 import os
 import random
+import time
 from collections import defaultdict
 from collections.abc import Mapping
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +25,13 @@ from deepdocforgery.data import (
 from deepdocforgery.metrics import StreamingForgeryMetrics
 from deepdocforgery.model import DeepDocForgeryModel
 from deepdocforgery.objectives import DeepDocForgeryCriterion
+from deepdocforgery.telemetry import (
+    CPU_THREAD_ENVIRONMENT,
+    RunLogger,
+    compact_resources,
+    resolve_worker_count,
+    resource_snapshot,
+)
 
 
 class CosineEpochScheduler:
@@ -94,6 +103,11 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
 
 def _seed_worker(worker_id: int) -> None:
     del worker_id
+    # DataLoader workers decode/augment data. Giving every worker all CPU
+    # threads would multiply the process thread count and slow training down.
+    for name in CPU_THREAD_ENVIRONMENT:
+        os.environ[name] = "1"
+    torch.set_num_threads(1)
     worker_seed = torch.initial_seed() % (2**32)
     random.seed(worker_seed)
     np.random.seed(worker_seed)
@@ -157,21 +171,25 @@ def create_dataloader(
             replacement=True,
             generator=generator,
         )
+    number_of_workers = resolve_worker_count(data_config.get("num_workers", "auto"))
+    loader_options: dict[str, Any] = {}
+    if number_of_workers > 0:
+        loader_options["prefetch_factor"] = int(data_config.get("prefetch_factor", 2))
     return DataLoader(
         dataset,
         batch_size=int(data_config.get(f"{split}_batch_size", data_config.get("batch_size", 4))),
         shuffle=shuffle and sampler is None,
         sampler=sampler,
-        num_workers=int(data_config.get("num_workers", 0)),
+        num_workers=number_of_workers,
         pin_memory=bool(data_config.get("pin_memory", torch.cuda.is_available())),
         persistent_workers=(
-            bool(data_config.get("persistent_workers", True))
-            and int(data_config.get("num_workers", 0)) > 0
+            bool(data_config.get("persistent_workers", True)) and number_of_workers > 0
         ),
         collate_fn=collate_manifest_samples,
         worker_init_fn=_seed_worker,
         generator=generator,
         drop_last=bool(data_config.get("drop_last", False)) if split == "train" else False,
+        **loader_options,
     )
 
 
@@ -231,7 +249,11 @@ def evaluate_model(
     use_amp: bool = False,
     maximum_batches: int | None = None,
     metric_config: Mapping[str, Any] | None = None,
+    run: RunLogger | None = None,
+    progress_description: str = "Evaluation",
+    resource_interval_batches: int = 25,
 ) -> dict[str, Any]:
+    started = time.perf_counter()
     model.eval()
     metric_config = metric_config or {}
     metrics = StreamingForgeryMetrics(
@@ -244,10 +266,25 @@ def evaluate_model(
     benchmark_metrics: dict[str, StreamingForgeryMetrics] = {}
     exact_samples = 0
     total_samples = 0
+    processed_batches = 0
     losses = _LossAverages()
-    for batch_index, batch in enumerate(loader):
-        if maximum_batches is not None and batch_index >= maximum_batches:
-            break
+    total_batches = len(loader)
+    if maximum_batches is not None:
+        total_batches = min(total_batches, maximum_batches)
+    batches = islice(loader, total_batches)
+    indexed_loader = enumerate(batches)
+    progress = (
+        run.progress(
+            indexed_loader,
+            total=total_batches,
+            description=progress_description,
+            unit="batch",
+        )
+        if run is not None
+        else indexed_loader
+    )
+    for batch_index, batch in progress:
+        processed_batches += 1
         batch = batch.to(device, non_blocking=True)
         with torch.autocast(
             device_type=device.type,
@@ -307,6 +344,29 @@ def evaluate_model(
                     else batch.supervision.image_valid[indices]
                 ),
             )
+        completed_batches = batch_index + 1
+        should_report = completed_batches == total_batches or (
+            resource_interval_batches > 0 and completed_batches % resource_interval_batches == 0
+        )
+        if run is not None and should_report:
+            snapshot = resource_snapshot(device)
+            progress.set_postfix_str(
+                f"samples={total_samples} | {compact_resources(snapshot)}",
+                refresh=False,
+            )
+            run.event(
+                "evaluation_progress",
+                f"{progress_description}: {completed_batches}/{total_batches} batches | "
+                f"{compact_resources(snapshot)}",
+                completed_batches=completed_batches,
+                total_batches=total_batches,
+                samples=total_samples,
+                resources=snapshot,
+            )
+    if run is not None:
+        progress.close()
+    if processed_batches == 0:
+        raise RuntimeError("No evaluation batches were processed")
     result = metrics.compute()
     result["benchmarks"] = {
         name: value.compute() for name, value in sorted(benchmark_metrics.items())
@@ -316,4 +376,13 @@ def evaluate_model(
     result["evidence/exact_dct_fraction"] = exact_samples / total_samples if total_samples else 0.0
     if criterion is not None:
         result.update(losses.compute())
+    duration = max(time.perf_counter() - started, 1e-9)
+    result.update(
+        {
+            "performance/duration_seconds": duration,
+            "performance/batches_processed": processed_batches,
+            "performance/batches_per_second": processed_batches / duration,
+            "performance/samples_per_second": total_samples / duration,
+        }
+    )
     return result

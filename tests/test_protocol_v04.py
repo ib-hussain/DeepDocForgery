@@ -34,8 +34,9 @@ def _write_midv_authentic_fixture(root: Path) -> None:
     image_dir.mkdir(parents=True)
     mask_dir.mkdir(parents=True)
     Image.new("RGB", (2268, 4032), "white").save(image_dir / "00.jpg", quality=80)
-    # MIDV authentic masks can be opaque RGBA files whose RGB channels are all zero.
-    Image.new("RGBA", (2268, 4032), (0, 0, 0, 255)).save(mask_dir / "00.png")
+    # MIDV masks may use a lower-resolution but exactly scale-aligned grid.
+    # Authentic masks can also be opaque RGBA with zero-valued RGB channels.
+    Image.new("RGBA", (1152, 2048), (0, 0, 0, 255)).save(mask_dir / "00.png")
     (image_dir / "00.json").write_text(
         json.dumps(
             {
@@ -56,20 +57,23 @@ def test_midv_2268x4032_authentic_contract_is_understood(tmp_path: Path) -> None
         validation_fraction=0.15,
         test_fraction=0.15,
         limit=None,
+        workers=2,
     )
     assert len(records) == 1
     record = records[0]
     assert record.label == 0
     assert record.classification_supervised
     assert record.source_group == "midv:alb_id/00"
+    assert record.mask_scale_aligned
     with Image.open(record.image) as image, Image.open(record.mask) as mask:
-        assert image.size == mask.size == (2268, 4032)
+        assert image.size == (2268, 4032)
+        assert mask.size == (1152, 2048)
         assert np.asarray(mask)[..., :3].max() == 0
 
 
 def test_midv_portrait_geometry_is_letterboxed_without_distortion() -> None:
     image = Image.new("RGB", (2268, 4032), "white")
-    mask = Image.new("RGBA", image.size, (0, 0, 0, 255))
+    mask = Image.new("RGBA", (1152, 2048), (0, 0, 0, 255))
     rgb, target, valid, transform = letterbox_pair(image, mask, (512, 512), localization_valid=True)
     assert rgb.shape == (3, 512, 512)
     assert transform.resized_height == 512
@@ -77,6 +81,23 @@ def test_midv_portrait_geometry_is_letterboxed_without_distortion() -> None:
     assert transform.left == 112
     assert float(valid.sum()) == 288 * 512
     assert float(target.sum()) == 0.0
+
+
+def test_midv_rejects_an_aspect_ratio_mismatch(tmp_path: Path) -> None:
+    image_dir = tmp_path / "images" / "authentic" / "alb_id"
+    mask_dir = tmp_path / "masks" / "authentic" / "alb_id"
+    image_dir.mkdir(parents=True)
+    mask_dir.mkdir(parents=True)
+    Image.new("RGB", (2268, 4032), "white").save(image_dir / "00.jpg")
+    Image.new("L", (1152, 2000), 0).save(mask_dir / "00.png")
+    with pytest.raises(ValueError, match="aspect-ratio mismatch"):
+        prepare_midv(
+            tmp_path,
+            seed=7,
+            validation_fraction=0.15,
+            test_fraction=0.15,
+            limit=None,
+        )
 
 
 def test_doctamper_group_proxy_ignores_masked_edits() -> None:

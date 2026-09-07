@@ -149,3 +149,42 @@ def test_training_crop_keeps_a_positive_and_disables_exact_dct(tmp_path: Path) -
     assert sample["transform"].original_width == 26
     assert sample["transform"].original_height == 18
     assert sample["exact_dct"] is None
+
+
+def test_scale_aligned_mask_is_aligned_before_shared_crop(tmp_path: Path) -> None:
+    image = Image.new("RGB", (200, 100), "white")
+    mask = Image.new("L", (100, 50), 0)
+    for x in range(20, 40):
+        for y in range(10, 20):
+            mask.putpixel((x, y), 255)
+    image.save(tmp_path / "image.jpg")
+    mask.save(tmp_path / "mask.png")
+    manifest = tmp_path / "scaled.jsonl"
+    manifest.write_text(
+        json.dumps(
+            {
+                "sample_id": "scaled",
+                "image": "image.jpg",
+                "mask": "mask.png",
+                "split": "train",
+                "label": 1,
+                "source_group": "scaled",
+                "mask_scale_aligned": True,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    dataset = ForgeryManifestDataset(
+        manifest,
+        split="train",
+        image_size=(64, 64),
+        augment=True,
+        crop_probability=1.0,
+        crop_scale_range=(0.5, 0.5),
+    )
+    sample = dataset[0]
+    assert float(sample["tamper_mask"].sum()) > 0.0
+    assert sample["transform"].original_width == 100
+    assert sample["transform"].original_height == 50
+    assert summarize_manifest(dataset.records)["scale_aligned_masks"] == 1

@@ -7,3 +7,6 @@ The package contains dataset preparation, the DCT/degradation/spatial branches,
 fusion, the detail decoder, objectives, metrics, training, evaluation,
 inference, diagnostics, and HPO. No code under legacy `src/` or `scripts/` is
 required by the release.
+
+`telemetry.py` supplies the shared logging, progress, RAM/VRAM monitoring, CPU
+thread detection, and latest-run status contract used by every command.

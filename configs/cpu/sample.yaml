@@ -1,7 +1,8 @@
 data:
   manifest: output/manifests/cpu.jsonl
   batch_size: 1
-  num_workers: 0
+  num_workers: auto
+  prefetch_factor: 2
   image_size: [384, 384]
   exact_dct_probability: 0.0
   augmentation:
@@ -27,11 +28,12 @@ loss:
   main: {positive_pixel_weight: 1.5, topk_fraction: 0.01}
 training:
   seed: 7
-  cpu_threads: 4
+  cpu_threads: auto
   epochs: 2
   learning_rate: 0.0003
   minimum_learning_rate: 0.000001
   gradient_accumulation_steps: 2
   output_dir: output/model/cpu-sample
   selection_metric: pixel_macro/f1_forged
-metrics: {threshold: 0.5, catastrophic_f1_threshold: 0.1}
+metrics: {mask_threshold: 0.5, image_threshold: 0.5, catastrophic_f1_threshold: 0.1}
+logging: {resource_interval_batches: 10}
