@@ -1,0 +1,14 @@
+17:21:53 | INFO    | STARTED
+17:21:53 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260908T122153Z-6810-fcfc5e.log
+17:21:53 | INFO    | Prepare profile=cuda | CPU threads=28 | preparation workers=20
+17:21:53 | INFO    | CPU 4% | RAM 4.3/31.0G | RSS 0.5G
+17:21:55 | INFO    | doctamper-training: reused 120000/120000 prepared records
+17:21:56 | INFO    | doctamper-training: 120000 records prepared
+17:21:57 | INFO    | doctamper-testing: reused 30000/30000 prepared records
+17:21:57 | INFO    | doctamper-testing: 30000 records prepared
+17:21:58 | INFO    | doctamper-fcd: reused 2000/2000 prepared records
+17:21:58 | INFO    | doctamper-fcd: 2000 records prepared
+17:21:58 | INFO    | doctamper-scd: reused 18000/18000 prepared records
+17:21:58 | INFO    | doctamper-scd: 18000 records prepared
+17:21:59 | INFO    | Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images
+17:22:25 | INFO    | MIDV scan found 8999 images

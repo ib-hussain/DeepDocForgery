@@ -1,0 +1,71 @@
+Key results:
+
+* Unified DocTamper + MIDV-DM manifest pipeline
+* CPU profile uses bundled sample datasets
+* CUDA profile uses `data/dataset-doctamper` and `data/dataset-midv`
+* CUDA configuration targets approximately 20 GiB VRAM:
+
+  * Physical batch 4
+  * Gradient accumulation 4
+  * Effective batch 16
+  * AMP
+  * Gradient checkpointing
+  * Pretrained Swin-T
+* HPO is CUDA-only and chooses each trial’s best validation epoch
+* Official DocTamper TestingSet, FCD and SCD remain test-only
+* DocTamper does not incorrectly supervise image classification
+* MIDV supplies authentic and forged classification examples
+* MIDV derivatives are grouped through `base_image`
+* DocTamper now uses a masked perceptual grouping proxy
+* Portrait MIDV images and masks are letterboxed together without distortion
+* Tamper-aware crops retain positive regions
+* Positive-pixel weighting addresses small-forgery imbalance
+* Stride-2 decoder detail path improves fine localisation capacity
+* Exact JPEG coefficients are used only when geometry remains compatible
+* JPEG recompression and noise augmentation included
+* Pretrained Swin receives the correct normalisation
+* Initial and final classifiers are both supervised
+* Per-branch supervision counts are logged
+* Metrics include macro/micro F1, area buckets, catastrophic misses, FPR, FNR, AUROC and benchmark-specific reports
+* Scheduler rejects unsafe resume with a changed training horizon
+* All Python code is consolidated under `deepdocforgery/`
+* Each important directory has a README
+* Migration instructions preserve your existing large datasets
+
+Validation completed here:
+
+* 22 Python implementation modules
+* 58 test cases collected statically
+* Python compilation passed
+* Ruff formatting passed
+* Ruff lint passed
+* All YAML configurations parsed and passed contract checks
+* CPU/CUDA configuration separation verified
+* Both setup scripts passed Bash syntax checks
+* Supplied MIDV JPG/PNG/JSON geometry and authentic-mask semantics verified
+* ZIP integrity verified
+
+Start in a fresh extracted directory:
+
+```bash
+bash setup/cpu.sh
+source .venv-cpu/bin/activate
+python -m deepdocforgery prepare --profile cpu
+python -m deepdocforgery doctor --profile cpu
+python -m deepdocforgery smoke --device cpu
+python -m pytest -q
+python -m deepdocforgery train --config configs/cpu/sample.yaml --device cpu --output output/model/cpu-sample
+```
+
+For the complete datasets:
+
+```bash
+bash setup/cuda.sh
+source .venv-cuda/bin/activate
+python -m deepdocforgery prepare --profile cuda
+python -m deepdocforgery doctor --profile cuda
+python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full
+
+
+python -m deepdocforgery prepare --profile cuda && python -m deepdocforgery doctor --profile cuda &&  python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full
+```

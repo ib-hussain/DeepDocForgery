@@ -1,0 +1,10 @@
+13:55:21 | INFO    | STARTED
+13:55:21 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260907T085521Z-1398300-6bf05d.log
+13:55:21 | INFO    | Prepare profile=cuda | CPU threads=28 | MIDV workers=20
+13:55:21 | INFO    | CPU 30% | RAM 6.0/31.0G | RSS 0.5G
+13:55:30 | INFO    | doctamper-training: 1000/120000 images | CPU 2% | RAM 6.0/31.0G | RSS 0.6G
+13:55:39 | INFO    | doctamper-training: 2000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 0.8G
+13:55:47 | INFO    | doctamper-training: 3000/120000 images | CPU 3% | RAM 5.9/31.0G | RSS 0.9G
+13:55:54 | INFO    | doctamper-training: 4000/120000 images | CPU 3% | RAM 5.9/31.0G | RSS 1.0G
+13:55:58 | ERROR   | INTERRUPTED: 
+13:55:58 | ERROR   | INTERRUPTED | CPU 3% | RAM 5.9/31.0G | RSS 1.0G

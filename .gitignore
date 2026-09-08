@@ -27,7 +27,8 @@ data/*.zip
 # Generated artefacts (folder documentation remains tracked)
 output/**/*.json
 output/**/*.jsonl
-output/**/*.log
+# output/**/*.log
+!output/logs/
 output/**/*.yaml
 output/**/*.pt
 output/**/*.pth
