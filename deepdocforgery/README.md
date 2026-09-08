@@ -10,3 +10,5 @@ required by the release.
 
 `telemetry.py` supplies the shared logging, progress, RAM/VRAM monitoring, CPU
 thread detection, and latest-run status contract used by every command.
+`state.py` supplies atomic fingerprints, stale-process locks, record journals,
+and recovery metadata used by every long-running stage.

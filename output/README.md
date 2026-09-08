@@ -8,7 +8,8 @@ All generated artefacts belong here and are ignored by version control:
 - `logs/`: timestamped text/JSONL run logs, latest statuses, and reports;
 - `inference/`: probability maps, masks, overlays, and predictions;
 - `hpo/`: hyperparameter-search trials and summary;
-- `embeddings/`: optional exported representations.
+- `embeddings/`: optional exported representations;
+- `state/`: atomic restart contracts, cursors, and exact resume commands.
 
 Dataset inputs never belong here and release archives contain no generated
 artefacts from these folders.

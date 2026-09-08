@@ -1,10 +1,29 @@
-# DeepDocForgery 0.5.0
+# DeepDocForgery 0.5.1
 
 DeepDocForgery is a research pipeline for joint document-level forgery
 classification and pixel-level tamper localization. It trains through one
 manifest while preserving the different roles of DocTamper and MIDV-DM.
 
-## What changed in 0.5
+## What changed in 0.5.1
+
+- Setup, preparation, training, HPO, evaluation/testing, doctor, and inference
+  now persist recovery state. `python -m deepdocforgery status` reports exact
+  resume commands and completed record, batch, stage, trial, or epoch counts.
+- Training resumes from `last.pt` by default, restoring model, optimiser,
+  scheduler, AMP scaler, random generators, and deterministic loader state.
+- Preparation and inference use append-only journals with atomic checkpoints;
+  a torn final JSONL write is repaired safely after interruption.
+- Resume fingerprints reject changed inputs or behaviour-affecting settings
+  instead of mixing incompatible work.
+- MIDV camera JPEGs are EXIF-transposed to their upright geometry. Both
+  `4032x2268` and `2268x4032` storage/display orientations are supported, as
+  are strictly scale-aligned masks. Geometry-changing samples use pixel DCT.
+- Setup isolates pytest from ambient ROS/user-site plugins and reuses partially
+  installed environments and cached package downloads after failure.
+- Doctor checks every image, mask, and explicit ADN target referenced by the
+  manifest before an expensive run, using bounded parallel filesystem checks.
+
+## 0.5 observability baseline
 
 - Every long operation has a `tqdm` progress bar and timestamped status events.
 - Prepare, doctor, smoke, train, validation/test, HPO, and inference persist a
@@ -74,6 +93,7 @@ output/logs/train/<run-id>.jsonl     structured events and resource samples
 output/logs/train/latest.json        latest train command status
 output/model/<name>/metrics.jsonl    complete metrics for every epoch
 output/model/<name>/status.json      running/succeeded/failed model status
+output/state/                         restart cursors and stage contracts
 ```
 
 Each `latest.json` changes to `running` as soon as its command starts and is
@@ -82,13 +102,13 @@ well as completed and failed work.
 
 | Command | Current status | Primary result |
 |---|---|---|
-| `prepare` | `output/logs/prepare/latest.json` | `output/manifests/*.jsonl` |
-| `doctor` | `output/logs/doctor/latest.json` | `output/logs/doctor-*.json` |
-| `hpo` | `output/logs/hpo/latest.json` | `output/hpo/<run-id>/summary.json` |
+| `prepare` | `output/state/prepare/<profile>/state.json` | `output/manifests/*.jsonl` |
+| `doctor` | `output/state/doctor/<profile>.json` | `output/logs/doctor-*.json` |
+| `hpo` | `output/hpo/study-*/state.json` | `output/hpo/study-*/summary.json` |
 | `train` | `output/model/<name>/status.json` | checkpoints and `metrics.jsonl` |
-| `test` | `output/logs/test/latest.json` | `output/logs/test-metrics.json` |
+| `test` | `<report>.state.json` | checkpoint-adjacent test metrics |
 | `evaluate` | `output/logs/evaluate/latest.json` | requested evaluation report |
-| `infer` | `output/logs/infer/latest.json` | `output/inference/predictions.json` |
+| `infer` | `output/inference/state.json` | `output/inference/predictions.json` |
 
 Inspect all latest states at any time:
 
@@ -107,15 +127,10 @@ inference when redirecting output in CI. Persistent logs are still written.
 ```bash
 bash setup/cpu.sh
 source .venv-cpu/bin/activate
-
 python -m deepdocforgery prepare --profile cpu
 python -m deepdocforgery doctor --profile cpu
 python -m deepdocforgery smoke --device cpu
-
-python -m deepdocforgery train \
-  --config configs/cpu/sample.yaml \
-  --device cpu \
-  --output output/model/cpu-sample
+python -m deepdocforgery train --config configs/cpu/sample.yaml --device cpu --output output/model/cpu-sample
 ```
 
 The CPU profile deliberately uses the sample datasets, but it no longer leaves
@@ -129,12 +144,14 @@ CPU preparation reads your local `data/sample-doctamper` and
 the code archive. Tests create isolated temporary fixtures and never inspect,
 modify, or make assumptions about these directories.
 
-MIDV's `2268x4032` portrait images are letterboxed without distortion: to
+MIDV's `2268x4032` upright portrait images are letterboxed without distortion: to
 `216x384` inside the CPU `384x384` canvas and to `288x512` inside the CUDA
 `512x512` canvas. MIDV masks may be stored at `1152x2048`; preparation accepts
 that exact scale-aligned geometry, records it in the manifest, and the loader
 uses nearest-neighbour alignment before shared crop/flip augmentation. A true
-aspect-ratio mismatch remains a hard error. Padding is excluded from losses
+aspect-ratio mismatch remains a hard error. JPEGs stored as `4032x2268` with
+EXIF rotation are transposed to the same upright geometry; already-upright and
+landscape image/mask pairs are also accepted. Padding is excluded from losses
 and metrics.
 
 ## CUDA full-data start
@@ -159,13 +176,9 @@ Then run:
 ```bash
 bash setup/cuda.sh
 source .venv-cuda/bin/activate
-
 python -m deepdocforgery prepare --profile cuda
 python -m deepdocforgery doctor --profile cuda
-python -m deepdocforgery train \
-  --config configs/cuda/full.yaml \
-  --device cuda \
-  --output output/model/cuda-full
+python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full
 ```
 
 `configs/cuda/full.yaml` targets roughly 20 GiB VRAM: physical batch 4,
@@ -174,9 +187,10 @@ gradient accumulation 4 (effective batch 16), AMP, checkpointed Swin-T, and
 rate. If the first real batch runs out of memory, lower physical
 batch size to 3 or 2 and increase accumulation to preserve the effective batch.
 
-The CUDA doctor requires at least 16 GiB free before this profile starts. It
-exits with status `2` when another compute job (for example `hashcat`) is using
-the GPU or utilisation is already high. Stop that workload and rerun `doctor`;
+The CUDA doctor checks the complete manifest and requires at least 16 GiB free
+before this profile starts. It exits with status `2` when a referenced dataset
+file is missing, another compute job (for example `hashcat`) is using the GPU,
+or utilisation is already high. Resolve the reported issue and rerun `doctor`;
 do not make the training process compete for VRAM.
 
 ## HPO
@@ -184,42 +198,32 @@ do not make the training process compete for VRAM.
 HPO is CUDA-only and intentionally small:
 
 ```bash
-python -m deepdocforgery hpo \
-  --config configs/cuda/full.yaml \
-  --search configs/cuda/hpo.yaml \
-  --device cuda \
-  --output output/hpo
+python -m deepdocforgery hpo --config configs/cuda/full.yaml --search configs/cuda/hpo.yaml --device cuda --output output/hpo
 ```
 
-Each invocation creates its own `output/hpo/<run-id>/` directory, preventing a
-rerun from mixing trial metrics or overwriting an earlier search.
+The deterministic study directory is derived from the search contract. Reruns
+reuse successful trials and continue interrupted/failed trials; `--fresh`
+creates a separate study when a genuinely new run is intended.
 
 Run HPO only after `doctor --profile cuda` and a one-epoch bounded training
 run succeed on the real datasets.
 
-Training also refuses to mix a fresh run with an existing model directory.
-Choose a new `--output` path, or resume the existing run explicitly with
-`--resume output/model/<name>/last.pt`.
+Training automatically resumes `output/model/<name>/last.pt`. Pass an explicit
+`--resume CHECKPOINT` to recover another compatible epoch. `--fresh` disables
+resume and refuses to overwrite an existing experiment directory.
 
 ## Test, evaluate, and infer
 
 ```bash
-python -m deepdocforgery test \
-  --config configs/cuda/full.yaml \
-  --checkpoint output/model/cuda-full/best.pt \
-  --split test \
-  --device cuda \
-  --output output/logs/test-metrics.json
-
-python -m deepdocforgery infer \
-  --input path/to/image-or-folder \
-  --checkpoint output/model/cuda-full/best.pt \
-  --output output/inference \
-  --device cuda
+python -m deepdocforgery test --config configs/cuda/full.yaml --checkpoint output/model/cuda-full/best.pt --split test --device cuda --output output/model/cuda-full/test-metrics.json
+python -m deepdocforgery infer --input path/to/image-or-folder --checkpoint output/model/cuda-full/best.pt --output output/inference --device cuda
 ```
 
 `test` is an alias for `evaluate --split test`; `evaluate` remains available
-for explicit train/validation diagnostics. Both show progress and RAM/VRAM.
+for explicit train/validation diagnostics. Both show progress and RAM/VRAM,
+checkpoint their metric accumulators, and reuse a completed compatible report.
+Inference checkpoints every ten images by default. Rerun the identical command
+to resume either stage; use `--fresh` only to discard matching state.
 
 `infer --exact-jpeg --native-size` is an expert option. It preserves a JPEG’s
 coefficient grid but can consume much more memory for large MIDV photographs;

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.1
+
+- Added contract-checked, atomic recovery state for setup, preparation,
+  training, doctor, HPO, evaluation/testing, and inference.
+- Added append-only preparation and inference journals with torn-tail repair.
+- Made training auto-resume the latest epoch and restore model, optimiser,
+  scheduler, AMP scaler, RNG, and deterministic loader-generator state.
+- Made HPO reuse successful trials and resume each interrupted child trainer.
+- Added resumable evaluation metric accumulators and completed-report reuse.
+- Made completed inference runs return from their validated report without
+  reconstructing the model, and made completed external training checkpoints
+  self-contained in the selected output directory.
+- Extended `status` to report stage progress and exact recovery commands.
+- Isolated pytest from ambient ROS/user-site plugin discovery during setup.
+- Added EXIF-aware MIDV image/mask orientation handling for both `4032x2268`
+  and `2268x4032` geometries; exact DCT safely falls back after rotation.
+- Added regression tests for state contracts, journal recovery, metric-state
+  restoration, landscape MIDV pairs, and EXIF-rotated MIDV JPEGs.
+- Made doctor verify every manifest image, mask, and explicit ADN target with
+  bounded parallel filesystem checks before training.
+
 ## 0.5.0
 
 - Added one shared observability layer for every executable command.

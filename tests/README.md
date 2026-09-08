@@ -11,6 +11,10 @@ Telemetry tests verify automatic CPU sizing, RAM reporting, successful and
 failed lifecycle logs, and the first-class `test`/`status` CLI commands.
 
 MIDV coverage includes lower-resolution scale-aligned masks and rejection of
-true aspect-ratio mismatches.
+true aspect-ratio mismatches, plus portrait, landscape, and EXIF-rotated image
+grids. Recovery tests cover fingerprints, torn JSONL tails, journal resume, and
+metric-accumulator restoration. They also verify copy-safe resume commands and
+that changed manifest contents or debug training budgets cannot reuse an
+incompatible checkpoint.
 
 Run `python -m pytest -q` from the repository root.

@@ -57,6 +57,18 @@ class _Confusion:
         self.true_negative += float((~prediction & ~target & valid).sum())
         self.false_negative += float((~prediction & target & valid).sum())
 
+    def state_dict(self) -> dict[str, float]:
+        return {
+            "true_positive": self.true_positive,
+            "false_positive": self.false_positive,
+            "true_negative": self.true_negative,
+            "false_negative": self.false_negative,
+        }
+
+    def load_state_dict(self, state: dict[str, float]) -> None:
+        for name in ("true_positive", "false_positive", "true_negative", "false_negative"):
+            setattr(self, name, float(state.get(name, 0.0)))
+
     def metrics(self, prefix: str, *, null_if_empty: bool = False) -> dict[str, float | None]:
         tp, fp, tn, fn = (
             self.true_positive,
@@ -228,6 +240,62 @@ class StreamingForgeryMetrics:
             self.instance_tp += len(used_prediction)
             self.instance_fp += len(predicted_instances) - len(used_prediction)
             self.instance_fn += len(expected_instances) - len(used_truth)
+
+    def state_dict(self) -> dict[str, object]:
+        """Return a JSON-compatible accumulator checkpoint."""
+
+        return {
+            "parameters": {
+                "mask_threshold": self.mask_threshold,
+                "image_threshold": self.image_threshold,
+                "minimum_instance_area": self.minimum_instance_area,
+                "instance_iou_threshold": self.instance_iou_threshold,
+                "catastrophic_f1_threshold": self.catastrophic_f1_threshold,
+            },
+            "pixel": self.pixel.state_dict(),
+            "image": self.image.state_dict(),
+            "image_scores": self.image_scores,
+            "image_labels": self.image_labels,
+            "per_image_f1": self.per_image_f1,
+            "forged_image_f1": self.forged_image_f1,
+            "area_f1": self.area_f1,
+            "instance_tp": self.instance_tp,
+            "instance_fp": self.instance_fp,
+            "instance_fn": self.instance_fn,
+        }
+
+    def load_state_dict(self, state: dict[str, object]) -> None:
+        """Restore a state produced by :meth:`state_dict`."""
+
+        parameters = state.get("parameters", {})
+        if not isinstance(parameters, dict):
+            raise ValueError("Metric state parameters must be an object")
+        expected = {
+            "mask_threshold": self.mask_threshold,
+            "image_threshold": self.image_threshold,
+            "minimum_instance_area": self.minimum_instance_area,
+            "instance_iou_threshold": self.instance_iou_threshold,
+            "catastrophic_f1_threshold": self.catastrophic_f1_threshold,
+        }
+        if parameters != expected:
+            raise ValueError("Metric resume state uses different thresholds")
+        pixel = state.get("pixel")
+        image = state.get("image")
+        if not isinstance(pixel, dict) or not isinstance(image, dict):
+            raise ValueError("Metric resume state is missing confusion matrices")
+        self.pixel.load_state_dict(pixel)
+        self.image.load_state_dict(image)
+        self.image_scores = [float(value) for value in state.get("image_scores", [])]
+        self.image_labels = [int(value) for value in state.get("image_labels", [])]
+        self.per_image_f1 = [float(value) for value in state.get("per_image_f1", [])]
+        self.forged_image_f1 = [float(value) for value in state.get("forged_image_f1", [])]
+        area_f1 = state.get("area_f1", {})
+        if not isinstance(area_f1, dict) or set(area_f1) != set(self.area_f1):
+            raise ValueError("Metric resume state has invalid area buckets")
+        self.area_f1 = {key: [float(value) for value in values] for key, values in area_f1.items()}
+        self.instance_tp = float(state.get("instance_tp", 0.0))
+        self.instance_fp = float(state.get("instance_fp", 0.0))
+        self.instance_fn = float(state.get("instance_fn", 0.0))
 
     def compute(self) -> dict[str, float | None]:
         micro = self.pixel.metrics("pixel_micro")

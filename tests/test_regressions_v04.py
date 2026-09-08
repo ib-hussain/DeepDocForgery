@@ -163,3 +163,7 @@ def test_setup_scripts_check_dependencies_and_isolate_legacy_environments() -> N
         assert "output/logs/setup" in script
         assert "Cannot clear the active environment" in script
         assert "include-system-site-packages = true" in script
+        assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" in script
+        assert "PYTHONNOUSERSITE=1" in script
+        assert "output/state/setup" in script
+        assert "resume_command" in script

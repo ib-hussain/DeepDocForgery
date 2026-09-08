@@ -10,12 +10,20 @@ import torch
 from PIL import Image
 from torch.nn import functional as F
 
-from deepdocforgery.data import _letterbox
+from deepdocforgery.data import _letterbox, upright_image_copy
 from deepdocforgery.frequency import ExactJPEGDCTReader
 from deepdocforgery.io import load_yaml, read_jpeg_metadata
 from deepdocforgery.model import DeepDocForgeryModel
 from deepdocforgery.postprocess import extract_instances
 from deepdocforgery.runtime import load_checkpoint, resolve_device
+from deepdocforgery.state import (
+    JsonlJournal,
+    StageLock,
+    command_text,
+    file_identity,
+    fingerprint,
+    load_json_object,
+)
 from deepdocforgery.telemetry import (
     RunLogger,
     compact_resources,
@@ -23,6 +31,7 @@ from deepdocforgery.telemetry import (
     print_result,
     reset_peak_memory,
     resource_snapshot,
+    utc_now,
     write_json_atomic,
 )
 
@@ -55,6 +64,13 @@ def parse_args() -> argparse.Namespace:
         help="Run all images at native resolution instead of configured letterboxing",
     )
     parser.add_argument("--log-dir", type=Path, default=Path("output/logs"))
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=10,
+        help="Persist inference results after this many images",
+    )
+    parser.add_argument("--fresh", action="store_true", help="Discard matching inference state")
     parser.add_argument("--no-progress", action="store_true")
     return parser.parse_args()
 
@@ -71,6 +87,42 @@ def _paths(value: Path) -> list[Path]:
         if paths:
             return paths
     raise FileNotFoundError(f"No supported images found at {value}")
+
+
+def _inference_resume_command(args: argparse.Namespace) -> str:
+    parts: list[object] = [
+        "python",
+        "-m",
+        "deepdocforgery",
+        "infer",
+        "--input",
+        args.input,
+        "--checkpoint",
+        args.checkpoint,
+        "--output",
+        args.output,
+        "--device",
+        args.device,
+        "--mask-threshold",
+        args.mask_threshold,
+        "--image-threshold",
+        args.image_threshold,
+        "--minimum-instance-area",
+        args.minimum_instance_area,
+        "--checkpoint-interval",
+        args.checkpoint_interval,
+        "--log-dir",
+        args.log_dir,
+    ]
+    if args.config is not None:
+        parts.extend(("--config", args.config))
+    if args.exact_jpeg:
+        parts.append("--exact-jpeg")
+    if args.native_size:
+        parts.append("--native-size")
+    if args.no_progress:
+        parts.append("--no-progress")
+    return command_text(parts)
 
 
 def _native_tensor(image: Image.Image) -> torch.Tensor:
@@ -115,8 +167,10 @@ def _save_visuals(
 
 
 def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
-    raw_checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    if args.checkpoint_interval < 1:
+        raise ValueError("--checkpoint-interval must be positive")
     if args.config is None:
+        raw_checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
         config = raw_checkpoint.get("config")
         if not isinstance(config, dict):
             raise ValueError("Checkpoint has no embedded config; pass --config")
@@ -129,6 +183,52 @@ def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
     )
     reset_peak_memory(device)
     paths = _paths(args.input)
+    output_dir = args.output.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    contract = fingerprint(
+        {
+            "stage": "infer",
+            "checkpoint": file_identity(args.checkpoint),
+            "config": config,
+            "inputs": [file_identity(path) for path in paths],
+            "mask_threshold": args.mask_threshold,
+            "image_threshold": args.image_threshold,
+            "minimum_instance_area": args.minimum_instance_area,
+            "exact_jpeg": args.exact_jpeg,
+            "native_size": args.native_size,
+        }
+    )
+    journal = JsonlJournal(
+        records_path=output_dir / "predictions.records.jsonl",
+        state_path=output_dir / "state.json",
+        stage="infer",
+        contract=contract,
+        total_items=len(paths),
+        resume=not args.fresh,
+    )
+    records: list[dict[str, object]] = [dict(value) for value in journal.records]
+    resumed_images = len(records)
+    for index, record in enumerate(records):
+        if record.get("input") != str(paths[index]):
+            journal.close()
+            raise ValueError("Inference resume journal no longer matches the ordered inputs")
+        files = record.get("files")
+        if not isinstance(files, dict) or any(
+            not Path(str(files.get(name, ""))).is_file()
+            for name in ("probability", "mask", "overlay")
+        ):
+            journal.close()
+            raise ValueError(
+                "Inference resume artefacts are incomplete; use --fresh to regenerate them"
+            )
+    resume_command = _inference_resume_command(args)
+    journal.checkpoint(
+        "completed" if journal.complete else "running",
+        run_id=run.run_id,
+        resume_command=resume_command,
+        text_log=str(run.text_path),
+        events_log=str(run.events_path),
+    )
     run.info(
         f"Inference started: {len(paths)} images on {device} | "
         f"CPU threads={compute['torch_threads']}",
@@ -137,79 +237,127 @@ def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
         device=str(device),
         checkpoint=str(args.checkpoint.resolve()),
         compute=compute,
+        resumed_images=len(records),
+        resume_state=str(journal.state_path),
     )
     run.resource(device, event="resources_initial")
+    report = output_dir / "predictions.json"
+    if journal.complete:
+        cached = load_json_object(report)
+        if cached is None:
+            journal.close()
+            raise ValueError(f"Completed inference state has no valid report: {report}")
+        resources = resource_snapshot(device)
+        journal.finish(
+            run_id=run.run_id,
+            report=str(report),
+            resume_command=resume_command,
+            text_log=str(run.text_path),
+            events_log=str(run.events_path),
+        )
+        journal.close()
+        run.info(
+            f"Inference already complete; reused {report}",
+            event="inference_reused",
+            images=len(records),
+            report=str(report),
+            state=str(output_dir / "state.json"),
+            resources=resources,
+        )
+        run.finish(
+            "succeeded",
+            cache_hit=True,
+            images=len(records),
+            report=str(report),
+            resources=resources,
+        )
+        return {
+            "status": "ok",
+            "cache_hit": True,
+            "images": len(records),
+            "report": str(report),
+            "resources": resources,
+            "text_log": str(run.text_path),
+            "events_log": str(run.events_path),
+        }
     model = (
         DeepDocForgeryModel.from_config(config.get("model", {}), load_pretrained=False)
         .to(device)
         .eval()
     )
     load_checkpoint(args.checkpoint, model=model, map_location=device)
-    output_dir = args.output.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
     configured_size = config.get("data", {}).get("image_size", [512, 512])
     exact_reader = ExactJPEGDCTReader() if args.exact_jpeg else None
-    records: list[dict[str, object]] = []
-
     progress = run.progress(
-        enumerate(paths),
+        enumerate(paths[len(records) :], start=len(records)),
         total=len(paths),
+        initial=len(records),
         description="Inference",
         unit="image",
     )
-    for index, image_path in progress:
-        with Image.open(image_path) as image_file:
-            original = image_file.convert("RGB")
-        exact = None
-        transform = None
-        is_jpeg = image_path.suffix.lower() in {".jpg", ".jpeg"}
-        use_native = args.native_size or (args.exact_jpeg and is_jpeg)
-        if use_native:
-            rgb = _native_tensor(original)
-        else:
-            rgb, _, _, transform = _letterbox(
-                original,
-                None,
-                (int(configured_size[0]), int(configured_size[1])),
+    try:
+        for index, image_path in progress:
+            with Image.open(image_path) as image_file:
+                original, orientation = upright_image_copy(image_file)
+                original = original.convert("RGB")
+            exact = None
+            transform = None
+            is_jpeg = image_path.suffix.lower() in {".jpg", ".jpeg"}
+            exact_eligible = args.exact_jpeg and is_jpeg and orientation == 1
+            use_native = args.native_size or exact_eligible
+            if use_native:
+                rgb = _native_tensor(original)
+            else:
+                rgb, _, _, transform = _letterbox(
+                    original,
+                    None,
+                    (int(configured_size[0]), int(configured_size[1])),
+                )
+                rgb = rgb.unsqueeze(0)
+            if exact_eligible:
+                exact = exact_reader.read(image_path)
+                metadata = exact.metadata
+            else:
+                metadata = read_jpeg_metadata(image_path)
+            if args.exact_jpeg and is_jpeg and orientation != 1:
+                run.warning(
+                    f"Exact DCT disabled for EXIF-oriented JPEG: {image_path}",
+                    event="exact_dct_orientation_fallback",
+                    input=str(image_path),
+                    exif_orientation=orientation,
+                )
+            with torch.no_grad():
+                output = model(
+                    rgb.to(device),
+                    metadata=metadata.to(device),
+                    exact_dct=None if exact is None else exact.to(device),
+                    # Consistency is a training objective, not required for predictions.
+                    compute_consistency=False,
+                )
+            probability = output.decoder.mask_probability.cpu()
+            if transform is not None:
+                probability = _restore_letterbox(probability, transform)
+            instances = extract_instances(
+                probability,
+                threshold=args.mask_threshold,
+                minimum_area=args.minimum_instance_area,
+            )[0]
+            output_prefix = output_dir / f"{index:05d}-{image_path.stem}"
+            probability_path, binary_path, overlay_path = _save_visuals(
+                original, probability, output_prefix, args.mask_threshold
             )
-            rgb = rgb.unsqueeze(0)
-        if args.exact_jpeg and is_jpeg:
-            exact = exact_reader.read(image_path)
-            metadata = exact.metadata
-        else:
-            metadata = read_jpeg_metadata(image_path)
-        with torch.no_grad():
-            output = model(
-                rgb.to(device),
-                metadata=metadata.to(device),
-                exact_dct=None if exact is None else exact.to(device),
-                # Consistency is a training objective, not required for predictions.
-                compute_consistency=False,
-            )
-        probability = output.decoder.mask_probability.cpu()
-        if transform is not None:
-            probability = _restore_letterbox(probability, transform)
-        instances = extract_instances(
-            probability,
-            threshold=args.mask_threshold,
-            minimum_area=args.minimum_instance_area,
-        )[0]
-        output_prefix = output_dir / f"{index:05d}-{image_path.stem}"
-        probability_path, binary_path, overlay_path = _save_visuals(
-            original, probability, output_prefix, args.mask_threshold
-        )
-        image_probability = float(output.decoder.image_probability.squeeze().cpu())
-        attention = {
-            level: {branch: float(value.detach().cpu()) for branch, value in branches.items()}
-            for level, branches in output.front_end.fusion.mean_attention().items()
-        }
-        records.append(
-            {
+            image_probability = float(output.decoder.image_probability.squeeze().cpu())
+            attention = {
+                level: {branch: float(value.detach().cpu()) for branch, value in branches.items()}
+                for level, branches in output.front_end.fusion.mean_attention().items()
+            }
+            record = {
                 "input": str(image_path),
                 "image_probability": image_probability,
                 "decision": "forged" if image_probability >= args.image_threshold else "authentic",
                 "mask_threshold": args.mask_threshold,
                 "exact_jpeg_used": exact is not None,
+                "exif_orientation": orientation,
                 "instances": [instance.to_dict() for instance in instances],
                 "attention": attention,
                 "classification_to_localization_strength": float(
@@ -222,19 +370,40 @@ def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
                     "overlay": str(overlay_path),
                 },
             }
+            records.append(record)
+            journal.append(record)
+            completed = index + 1
+            if completed == len(paths) or completed % args.checkpoint_interval == 0:
+                journal.checkpoint(
+                    "running",
+                    run_id=run.run_id,
+                    resume_command=resume_command,
+                    text_log=str(run.text_path),
+                    events_log=str(run.events_path),
+                )
+                snapshot = resource_snapshot(device)
+                progress.set_postfix_str(compact_resources(snapshot), refresh=False)
+                run.event(
+                    "inference_progress",
+                    f"Inference: {completed}/{len(paths)} images | {compact_resources(snapshot)}",
+                    completed=completed,
+                    total=len(paths),
+                    resources=snapshot,
+                )
+        progress.close()
+    except BaseException as error:
+        progress.close()
+        status = "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
+        journal.checkpoint(
+            status,
+            run_id=run.run_id,
+            error=str(error),
+            resume_command=resume_command,
+            text_log=str(run.text_path),
+            events_log=str(run.events_path),
         )
-        completed = index + 1
-        if completed == len(paths) or completed % 10 == 0:
-            snapshot = resource_snapshot(device)
-            progress.set_postfix_str(compact_resources(snapshot), refresh=False)
-            run.event(
-                "inference_progress",
-                f"Inference: {completed}/{len(paths)} images | {compact_resources(snapshot)}",
-                completed=completed,
-                total=len(paths),
-                resources=snapshot,
-            )
-    progress.close()
+        journal.close()
+        raise
     result = {
         "status": "ok",
         "checkpoint": str(args.checkpoint.resolve()),
@@ -242,11 +411,21 @@ def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
         "resources": resource_snapshot(device),
         "text_log": str(run.text_path),
         "events_log": str(run.events_path),
+        "resume_state": str(journal.state_path),
+        "resumed_images": resumed_images,
     }
-    report = output_dir / "predictions.json"
     write_json_atomic(report, result)
+    journal.finish(
+        run_id=run.run_id,
+        report=str(report),
+        resume_command=resume_command,
+        text_log=str(run.text_path),
+        events_log=str(run.events_path),
+    )
+    journal.close()
     summary = {
         "status": "ok",
+        "cache_hit": False,
         "images": len(records),
         "report": str(report),
         "resources": result["resources"],
@@ -264,12 +443,39 @@ def _infer(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
 
 def main() -> None:
     args = parse_args()
-    with RunLogger(
+    run = RunLogger(
         "infer",
         log_root=args.log_dir,
         progress_enabled=not args.no_progress,
-    ) as run:
-        result = _infer(args, run)
+    )
+    output = args.output.resolve()
+    try:
+        with run:
+            output.mkdir(parents=True, exist_ok=True)
+            with StageLock(output / ".infer.lock", stage="infer"):
+                result = _infer(args, run)
+    except BaseException as error:
+        try:
+            state_path = output / "state.json"
+            state = load_json_object(state_path)
+            if state is not None and state.get("run_id") == run.run_id:
+                state.update(
+                    {
+                        "status": (
+                            "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
+                        ),
+                        "updated_at": utc_now(),
+                        "error_type": type(error).__name__,
+                        "error": str(error),
+                        "text_log": str(run.text_path),
+                        "events_log": str(run.events_path),
+                        "resources": run.last_resources,
+                    }
+                )
+                write_json_atomic(state_path, state)
+        except Exception:
+            pass
+        raise
     print_result(result)
 
 

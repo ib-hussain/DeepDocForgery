@@ -2,23 +2,71 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${PROJECT_ROOT}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_PATH="${VENV_PATH:-${PROJECT_ROOT}/.venv-cuda}"
 PYTORCH_INDEX_URL="${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu128}"
 SETUP_LOG_DIR="${PROJECT_ROOT}/output/logs/setup"
+SETUP_STATE_DIR="${PROJECT_ROOT}/output/state/setup"
+SETUP_STATE="${SETUP_STATE_DIR}/cuda.json"
 SETUP_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 SETUP_LOG="${SETUP_LOG_DIR}/cuda-${SETUP_STAMP}-$$.log"
 PROFILE_MARKER="${VENV_PATH}/.deepdocforgery-profile"
 
-mkdir -p "${SETUP_LOG_DIR}"
+# Prevent a sourced ROS installation or user-site package from auto-loading
+# unrelated pytest plugins into this isolated training environment.
+unset PYTHONPATH
+export PYTHONNOUSERSITE=1
+export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+
+mkdir -p "${SETUP_LOG_DIR}" "${SETUP_STATE_DIR}"
 exec > >(tee -a "${SETUP_LOG}") 2>&1
 echo "STARTED | CUDA setup | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "Log: ${SETUP_LOG}"
+
+COMPLETED_STEP="started"
+
+write_setup_state() {
+  local status="$1"
+  local step="$2"
+  local error="${3:-}"
+  "${PYTHON_BIN}" - "${SETUP_STATE}" "cuda" "${status}" "${step}" "${SETUP_LOG}" "${VENV_PATH}" "${error}" <<'PY'
+import json
+import os
+import pathlib
+import sys
+from datetime import datetime, timezone
+
+path, profile, status, step, log, venv, error = sys.argv[1:]
+target = pathlib.Path(path)
+target.parent.mkdir(parents=True, exist_ok=True)
+payload = {
+    "format_version": 1,
+    "stage": "setup/cuda",
+    "contract": profile,
+    "status": status,
+    "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    "completed_step": step,
+    "environment": str(pathlib.Path(venv).resolve()),
+    "text_log": str(pathlib.Path(log).resolve()),
+    "resume_command": "bash setup/cuda.sh",
+}
+if error:
+    payload["error"] = error
+temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+os.replace(temporary, target)
+PY
+}
+
+write_setup_state "running" "${COMPLETED_STEP}"
 
 report_setup_exit() {
   local exit_code=$?
   if [[ "${exit_code}" != "0" ]]; then
     echo "FAILED | CUDA setup | exit=${exit_code} | $(date -u +%Y-%m-%dT%H:%M:%SZ)" >&2
+    set +e
+    write_setup_state "failed" "${COMPLETED_STEP}" "setup exited with code ${exit_code}"
   fi
 }
 trap report_setup_exit EXIT
@@ -65,11 +113,19 @@ if grep -Eq '^include-system-site-packages = true' "${VENV_PATH}/pyvenv.cfg"; th
   exit 2
 fi
 
+# Mark the environment before expensive CUDA wheel downloads.  If a later
+# validation step fails, rerunning this script reuses the partial environment.
+printf 'cuda\n' > "${PROFILE_MARKER}"
+COMPLETED_STEP="environment_created"
+write_setup_state "running" "${COMPLETED_STEP}"
+
 "${VENV_PATH}/bin/python" -m pip install --upgrade pip wheel "setuptools<82"
 "${VENV_PATH}/bin/python" -m pip install torch torchvision --index-url "${PYTORCH_INDEX_URL}"
 CC="${CC:-gcc}" CXX="${CXX:-g++}" \
   "${VENV_PATH}/bin/python" -m pip install -e \
   "${PROJECT_ROOT}[dev,data,exact-jpeg,cuda,download]"
+COMPLETED_STEP="dependencies_installed"
+write_setup_state "running" "${COMPLETED_STEP}"
 "${VENV_PATH}/bin/python" -m pip check
 
 if [[ "${RUN_TESTS:-1}" == "1" ]]; then
@@ -79,7 +135,11 @@ if [[ "${RUN_TESTS:-1}" == "1" ]]; then
   else
     "${VENV_PATH}/bin/python" -m pytest -q "${PROJECT_ROOT}/tests"
   fi
+  COMPLETED_STEP="tests_passed"
+else
+  COMPLETED_STEP="tests_skipped"
 fi
+write_setup_state "running" "${COMPLETED_STEP}"
 
 "${VENV_PATH}/bin/python" - <<'PY'
 import json
@@ -96,7 +156,10 @@ compute = configure_compute(torch.device("cuda"), cpu_threads="auto")
 print(json.dumps({"compute": compute, "resources": resource_snapshot(torch.device("cuda"))}, indent=2))
 PY
 
-printf 'cuda\n' > "${PROFILE_MARKER}"
+COMPLETED_STEP="runtime_verified"
+write_setup_state "running" "${COMPLETED_STEP}"
+COMPLETED_STEP="completed"
+write_setup_state "completed" "${COMPLETED_STEP}"
 echo "SUCCEEDED | CUDA setup | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "CUDA environment ready: ${VENV_PATH}"
 echo "Activate with: source ${VENV_PATH}/bin/activate"

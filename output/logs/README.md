@@ -9,7 +9,8 @@ epoch and evaluation throughput.
 `latest.json` is atomically refreshed while a command runs, so an interruption
 cannot leave a partially written status file.
 
-Standalone reports such as `doctor-cpu.json` and test metrics also live here.
+Standalone doctor reports also live here. Evaluation/test reports default next
+to their checkpoint so each experiment remains self-contained.
 Run `python -m deepdocforgery status` to collect the latest statuses.
 
 The shell installers additionally retain their complete pip/test transcripts

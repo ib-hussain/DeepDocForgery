@@ -7,7 +7,8 @@ data:
   batch_size: 4
   num_workers: auto
   prefetch_factor: 3
-  persistent_workers: true
+  # Worker restart at each epoch makes checkpoint resumes deterministic.
+  persistent_workers: false
   pin_memory: true
   image_size: [512, 512]
   exact_dct_probability: 0.35

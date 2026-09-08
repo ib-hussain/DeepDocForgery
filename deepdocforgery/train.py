@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
+import os
 import time
 from collections import Counter, defaultdict
 from itertools import islice
@@ -19,12 +21,15 @@ from deepdocforgery.objectives import DeepDocForgeryCriterion
 from deepdocforgery.runtime import (
     CosineEpochScheduler,
     atomic_torch_save,
+    capture_rng_state,
     create_dataloader,
     evaluate_model,
     load_checkpoint,
     resolve_device,
+    restore_rng_state,
     seed_everything,
 )
+from deepdocforgery.state import StageLock, command_text, file_identity, fingerprint
 from deepdocforgery.telemetry import (
     RunLogger,
     compact_resources,
@@ -48,7 +53,20 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--device", default="auto")
     parser.add_argument("--output", type=Path, default=None)
-    parser.add_argument("--resume", type=Path, default=None)
+    resume_group = parser.add_mutually_exclusive_group()
+    resume_group.add_argument(
+        "--resume",
+        nargs="?",
+        const="auto",
+        default="auto",
+        metavar="CHECKPOINT",
+        help="Resume a checkpoint; without a path, auto-use <output>/last.pt (default)",
+    )
+    resume_group.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Disable automatic resume; use a new output directory when artefacts already exist",
+    )
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--log-dir", type=Path, default=Path("output/logs"))
     parser.add_argument("--no-progress", action="store_true")
@@ -71,6 +89,111 @@ def _metric_text(value: object) -> str:
     return "n/a" if value is None else f"{float(value):.4f}"
 
 
+def _training_contract(
+    config: dict[str, Any],
+    *,
+    maximum_train_batches: int | None = None,
+    maximum_val_batches: int | None = None,
+    device: str | None = None,
+) -> str:
+    """Fingerprint every setting that changes optimisation semantics."""
+
+    contract_config = copy.deepcopy(config)
+    training = contract_config.get("training")
+    if isinstance(training, dict):
+        training.pop("output_dir", None)
+    contract_config.pop("logging", None)
+    manifest_value = contract_config.get("data", {}).get("manifest")
+    if manifest_value is None:
+        raise ValueError("Configuration data.manifest is required")
+    manifest = Path(str(manifest_value)).resolve()
+    manifest_identity = file_identity(manifest, content=True)
+    manifest_contract = {
+        "path": manifest_identity["path"],
+        "sha256": manifest_identity["sha256"],
+    }
+    contract_config["data"]["manifest"] = manifest_contract
+    return fingerprint(
+        {
+            "stage": "train",
+            "config": contract_config,
+            "maximum_train_batches": maximum_train_batches,
+            "maximum_val_batches": maximum_val_batches,
+            "device": device,
+        }
+    )
+
+
+def _train_resume_command(
+    args: argparse.Namespace,
+    output_dir: Path,
+    *,
+    fallback_checkpoint: Path | None = None,
+) -> str:
+    parts: list[object] = [
+        "python",
+        "-m",
+        "deepdocforgery",
+        "train",
+        "--config",
+        args.config,
+        "--device",
+        args.device,
+        "--output",
+        output_dir,
+        "--log-dir",
+        args.log_dir,
+    ]
+    if args.manifest is not None:
+        parts.extend(("--manifest", args.manifest))
+    if args.epochs is not None:
+        parts.extend(("--epochs", args.epochs))
+    if args.maximum_train_batches is not None:
+        parts.extend(("--maximum-train-batches", args.maximum_train_batches))
+    if args.maximum_val_batches is not None:
+        parts.extend(("--maximum-val-batches", args.maximum_val_batches))
+    if not (output_dir / "last.pt").is_file() and fallback_checkpoint is not None:
+        parts.extend(("--resume", fallback_checkpoint))
+    if args.no_progress:
+        parts.append("--no-progress")
+    return command_text(parts)
+
+
+def _resolve_resume_path(args: argparse.Namespace, output_dir: Path) -> Path | None:
+    if args.fresh:
+        return None
+    if args.resume in (None, "auto"):
+        candidate = output_dir / "last.pt"
+        return candidate if candidate.is_file() else None
+    candidate = Path(str(args.resume)).resolve()
+    if not candidate.is_file():
+        raise FileNotFoundError(f"Resume checkpoint does not exist: {candidate}")
+    return candidate
+
+
+def _reconcile_metrics(path: Path, completed_epochs: int) -> None:
+    """Remove rows newer than an explicitly selected checkpoint."""
+
+    if not path.is_file():
+        return
+    kept: list[str] = []
+    changed = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        value = json.loads(line)
+        if not isinstance(value, dict) or "epoch" not in value:
+            raise ValueError(f"Invalid training metrics row in {path}")
+        if int(value["epoch"]) <= completed_epochs:
+            kept.append(json.dumps(value, sort_keys=True))
+        else:
+            changed = True
+    if changed:
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8")
+        temporary.replace(path)
+
+
 def _checkpoint_payload(
     *,
     model: DeepDocForgeryModel,
@@ -82,9 +205,11 @@ def _checkpoint_payload(
     global_step: int,
     best_metric: float,
     validation: dict[str, float | None],
+    contract: str,
+    data_generator_state: torch.Tensor | None,
 ) -> dict[str, Any]:
     return {
-        "format_version": 1,
+        "format_version": 2,
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
@@ -94,6 +219,9 @@ def _checkpoint_payload(
         "global_step": global_step,
         "best_metric": best_metric,
         "validation": validation,
+        "contract": contract,
+        "rng_state": capture_rng_state(),
+        "data_generator_state": data_generator_state,
     }
 
 
@@ -125,7 +253,14 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         if args.output is not None
         else Path(training.get("output_dir", "output/model/deepdocforgery"))
     ).resolve()
-    if args.resume is None:
+    resume_path = _resolve_resume_path(args, output_dir)
+    contract = _training_contract(
+        config,
+        maximum_train_batches=args.maximum_train_batches,
+        maximum_val_batches=args.maximum_val_batches,
+        device=str(device),
+    )
+    if resume_path is None:
         existing_run_files = [
             path
             for path in (
@@ -134,12 +269,13 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 output_dir / "last.pt",
                 output_dir / "best.pt",
             )
-            if path.exists()
+            if path.exists() and path.name != "status.json"
         ]
         if existing_run_files:
             raise FileExistsError(
                 f"Training output already contains a run: {output_dir}. "
-                "Pass --resume with last.pt or choose a new --output directory."
+                "Automatic resume could not find last.pt; choose a new --output directory "
+                "or recover an explicit checkpoint with --resume CHECKPOINT."
             )
     output_dir.mkdir(parents=True, exist_ok=True)
     status_path = output_dir / "status.json"
@@ -168,6 +304,11 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             "resources": initial_resources,
             "text_log": str(run.text_path),
             "events_log": str(run.events_path),
+            "contract": contract,
+            "resume_from": None if resume_path is None else str(resume_path.resolve()),
+            "resume_command": _train_resume_command(
+                args, output_dir, fallback_checkpoint=resume_path
+            ),
         },
     )
     reset_peak_memory(device)
@@ -213,7 +354,7 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             )
 
     model = DeepDocForgeryModel.from_config(
-        config.get("model", {}), load_pretrained=args.resume is None
+        config.get("model", {}), load_pretrained=resume_path is None
     ).to(device)
     criterion = DeepDocForgeryCriterion.from_config(config.get("loss", {})).to(device)
     parameters = {
@@ -278,26 +419,74 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     start_epoch = 0
     global_step = 0
     best_metric = float("-inf")
-    if args.resume is not None:
+    if resume_path is not None:
         checkpoint = load_checkpoint(
-            args.resume,
+            resume_path,
             model=model,
             optimizer=optimizer,
             scheduler=scheduler,
             scaler=scaler,
             map_location=device,
         )
+        saved_contract = checkpoint.get("contract")
+        if saved_contract is None:
+            saved_config = checkpoint.get("config")
+            if not isinstance(saved_config, dict):
+                raise ValueError("Legacy checkpoint has no configuration for compatibility checks")
+            saved_contract = _training_contract(
+                saved_config,
+                maximum_train_batches=args.maximum_train_batches,
+                maximum_val_batches=args.maximum_val_batches,
+                device=str(device),
+            )
+        if saved_contract != contract:
+            raise ValueError(
+                "Checkpoint configuration/data do not match this training run. "
+                "Use the original config and manifest, or start a documented fresh run."
+            )
         start_epoch = int(checkpoint.get("epoch", -1)) + 1
         global_step = int(checkpoint.get("global_step", 0))
         best_metric = float(checkpoint.get("best_metric", best_metric))
+        if start_epoch > epochs:
+            raise ValueError(
+                f"Checkpoint has completed {start_epoch} epochs but this run requests {epochs}"
+            )
+        restored_rng = restore_rng_state(checkpoint.get("rng_state"))
+        loader_generator = getattr(train_loader, "generator", None)
+        saved_generator_state = checkpoint.get("data_generator_state")
+        if loader_generator is not None and saved_generator_state is not None:
+            loader_generator.set_state(saved_generator_state)
+        _reconcile_metrics(output_dir / "metrics.jsonl", start_epoch)
         run.info(
-            f"Resumed at epoch {start_epoch + 1}/{epochs} from {args.resume.resolve()}",
+            f"Resumed after epoch {start_epoch}/{epochs} from {resume_path.resolve()}",
             event="checkpoint_resumed",
-            checkpoint=str(args.resume.resolve()),
-            start_epoch=start_epoch + 1,
+            checkpoint=str(resume_path.resolve()),
+            next_epoch=None if start_epoch == epochs else start_epoch + 1,
             global_step=global_step,
             best_metric=best_metric,
+            rng_restored=restored_rng,
         )
+        if not restored_rng:
+            run.warning(
+                "Legacy checkpoint has no RNG state; weights and optimiser are restored, but "
+                "the next epoch will not be bit-for-bit reproducible.",
+                event="legacy_checkpoint_resumed",
+                checkpoint=str(resume_path.resolve()),
+            )
+        if start_epoch == epochs and not (output_dir / "last.pt").is_file():
+            # An explicitly supplied checkpoint may already have finished the
+            # requested schedule but live outside this output directory. Keep
+            # the local run self-contained instead of reporting a missing
+            # latest checkpoint.
+            atomic_torch_save(checkpoint, output_dir / "last.pt")
+            if not (output_dir / "best.pt").is_file():
+                atomic_torch_save(checkpoint, output_dir / "best.pt")
+            run.info(
+                "Completed external checkpoint adopted into this run directory",
+                event="checkpoint_adopted",
+                checkpoint=str(resume_path.resolve()),
+                last_checkpoint=str((output_dir / "last.pt").resolve()),
+            )
 
     metric_name = str(training.get("selection_metric", "pixel/f1"))
     log_path = output_dir / "metrics.jsonl"
@@ -484,7 +673,20 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             global_step=global_step,
             best_metric=best_metric,
             validation=validation,
+            contract=contract,
+            data_generator_state=(
+                None
+                if getattr(train_loader, "generator", None) is None
+                else train_loader.generator.get_state()
+            ),
         )
+        # Write metrics before the checkpoint. If interrupted between these
+        # two atomic boundaries, resume truncates the uncommitted metric row;
+        # the inverse order could permanently lose a completed epoch's metrics.
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
         atomic_torch_save(payload, output_dir / "last.pt")
         if is_best:
             atomic_torch_save(payload, output_dir / "best.pt")
@@ -505,8 +707,6 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         save_every = int(training.get("save_every_epochs", 0))
         if save_every > 0 and (epoch + 1) % save_every == 0:
             atomic_torch_save(payload, output_dir / f"epoch-{epoch + 1:04d}.pt")
-        with log_path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record, sort_keys=True) + "\n")
         epoch_loss = record["train"].get("total", float("nan"))
         validation_precision = validation.get("pixel/precision")
         validation_recall = validation.get("pixel/recall")
@@ -548,6 +748,8 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 "performance": record["performance"],
                 "text_log": str(run.text_path),
                 "events_log": str(run.events_path),
+                "contract": contract,
+                "resume_command": _train_resume_command(args, output_dir),
             },
         )
 
@@ -570,10 +772,15 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             "resources": final_resources,
             "text_log": str(run.text_path),
             "events_log": str(run.events_path),
+            "contract": contract,
+            "resume_command": _train_resume_command(args, output_dir),
         },
     )
     result = {
         "status": "ok",
+        "resumed": resume_path is not None,
+        "resume_from": None if resume_path is None else str(resume_path.resolve()),
+        "contract": contract,
         "output_dir": str(output_dir),
         "best_checkpoint": str(output_dir / "best.pt"),
         "last_checkpoint": str(output_dir / "last.pt"),
@@ -604,7 +811,16 @@ def main() -> None:
     )
     try:
         with run:
-            result = _train(args, run)
+            config = load_yaml(args.config)
+            training = config.get("training", {})
+            output_dir = (
+                args.output
+                if args.output is not None
+                else Path(training.get("output_dir", "output/model/deepdocforgery"))
+            ).resolve()
+            output_dir.mkdir(parents=True, exist_ok=True)
+            with StageLock(output_dir / ".train.lock", stage="train"):
+                result = _train(args, run)
     except BaseException as error:
         try:
             config = load_yaml(args.config)
@@ -644,6 +860,20 @@ def main() -> None:
                         "text_log": str(run.text_path),
                         "events_log": str(run.events_path),
                         "resources": run.last_resources,
+                        "last_checkpoint": (
+                            str((output_dir / "last.pt").resolve())
+                            if (output_dir / "last.pt").is_file()
+                            else None
+                        ),
+                        "resume_command": _train_resume_command(
+                            args,
+                            output_dir,
+                            fallback_checkpoint=(
+                                None
+                                if args.resume in (None, "auto")
+                                else Path(str(args.resume)).resolve()
+                            ),
+                        ),
                     },
                 )
         except Exception:

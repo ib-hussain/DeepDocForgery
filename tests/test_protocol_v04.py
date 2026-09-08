@@ -8,10 +8,14 @@ import pytest
 from PIL import Image, ImageDraw
 
 from deepdocforgery.data import (
+    ForgeryManifestDataset,
     ManifestRecord,
     letterbox_pair,
+    orient_mask_for_image,
     validate_manifest_protocol,
+    write_manifest,
 )
+from deepdocforgery.doctor import audit_manifest_files
 from deepdocforgery.prepare import (
     DEFAULT_PROCESSED_ROOT,
     DOCTAMPER_SUBSETS,
@@ -26,6 +30,31 @@ def test_generated_manifest_defaults_live_under_output() -> None:
     assert PROFILE_DEFAULTS["cpu"][2] == Path("output/manifests/cpu.jsonl")
     assert PROFILE_DEFAULTS["cuda"][2] == Path("output/manifests/cuda.jsonl")
     assert DEFAULT_PROCESSED_ROOT == Path("output/processed")
+
+
+def test_doctor_audits_every_manifest_file_reference(tmp_path: Path) -> None:
+    image = tmp_path / "image.jpg"
+    mask = tmp_path / "mask.png"
+    Image.new("RGB", (32, 32), "white").save(image)
+    Image.new("L", (32, 32), 0).save(mask)
+    records = [
+        ManifestRecord(
+            sample_id="fixture",
+            image="image.jpg",
+            mask="mask.png",
+            split="train",
+            label=0,
+            source_group="fixture",
+        )
+    ]
+    complete = audit_manifest_files(records, tmp_path / "manifest.jsonl", workers=2)
+    assert complete["references_checked"] == 2
+    assert complete["missing_references"] == 0
+
+    mask.unlink()
+    incomplete = audit_manifest_files(records, tmp_path / "manifest.jsonl", workers=2)
+    assert incomplete["missing_references"] == 1
+    assert incomplete["missing_preview"][0]["kind"] == "mask"
 
 
 def _write_midv_authentic_fixture(root: Path) -> None:
@@ -69,6 +98,73 @@ def test_midv_2268x4032_authentic_contract_is_understood(tmp_path: Path) -> None
         assert image.size == (2268, 4032)
         assert mask.size == (1152, 2048)
         assert np.asarray(mask)[..., :3].max() == 0
+
+
+def test_midv_4032x2268_landscape_contract_is_understood(tmp_path: Path) -> None:
+    root = tmp_path / "midv"
+    image_dir = root / "images" / "authentic" / "alb_id"
+    mask_dir = root / "masks" / "authentic" / "alb_id"
+    image_dir.mkdir(parents=True)
+    mask_dir.mkdir(parents=True)
+    Image.new("RGB", (4032, 2268), "white").save(image_dir / "00.jpg", quality=80)
+    Image.new("L", (2048, 1152), 0).save(mask_dir / "00.png")
+    records = prepare_midv(
+        root,
+        seed=7,
+        validation_fraction=0.15,
+        test_fraction=0.15,
+        limit=None,
+    )
+    assert len(records) == 1
+    assert records[0].mask_scale_aligned
+    assert not records[0].exif_transposed
+
+
+def test_midv_exif_rotated_image_matches_upright_mask(tmp_path: Path) -> None:
+    root = tmp_path / "midv"
+    image_dir = root / "images" / "authentic" / "alb_id"
+    mask_dir = root / "masks" / "authentic" / "alb_id"
+    image_dir.mkdir(parents=True)
+    mask_dir.mkdir(parents=True)
+    exif = Image.Exif()
+    exif[274] = 6
+    # The stored JPEG grid is landscape; EXIF displays it as portrait.
+    Image.new("RGB", (120, 80), "white").save(image_dir / "00.jpg", quality=80, exif=exif)
+    Image.new("L", (40, 60), 0).save(mask_dir / "00.png")
+    records = prepare_midv(
+        root,
+        seed=7,
+        validation_fraction=0.15,
+        test_fraction=0.15,
+        limit=None,
+    )
+    assert len(records) == 1
+    assert records[0].exif_transposed
+    assert records[0].mask_scale_aligned
+    manifest = write_manifest(records, tmp_path / "manifest.jsonl")
+    sample = ForgeryManifestDataset(
+        manifest,
+        split=records[0].split,
+        image_size=(64, 64),
+        augment=False,
+    )[0]
+    assert sample["transform"].original_width == 80
+    assert sample["transform"].original_height == 120
+    assert sample["rgb"].shape == (3, 64, 64)
+    assert float(sample["tamper_mask"].sum()) == 0.0
+
+
+def test_midv_exif_rotates_a_raw_landscape_mask_to_upright() -> None:
+    raw_mask = Image.new("L", (2048, 1152), 0)
+    raw_mask.putpixel((100, 200), 255)
+    upright = orient_mask_for_image(
+        raw_mask,
+        raw_image_size=(4032, 2268),
+        upright_image_size=(2268, 4032),
+        image_orientation=6,
+    )
+    assert upright.size == (1152, 2048)
+    assert np.count_nonzero(np.asarray(upright)) == 1
 
 
 def test_midv_portrait_geometry_is_letterboxed_without_distortion() -> None:

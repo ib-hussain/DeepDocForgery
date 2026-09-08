@@ -450,6 +450,7 @@ class RunLogger:
         total: int | None,
         description: str,
         unit: str,
+        initial: int = 0,
         leave: bool = True,
     ) -> tqdm[T]:
         return tqdm(
@@ -457,6 +458,7 @@ class RunLogger:
             total=total,
             desc=description,
             unit=unit,
+            initial=initial,
             dynamic_ncols=True,
             mininterval=0.5,
             leave=leave,

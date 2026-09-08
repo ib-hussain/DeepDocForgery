@@ -7,11 +7,12 @@ import hashlib
 import io
 import json
 import os
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from itertools import islice
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import torch
@@ -20,10 +21,21 @@ from PIL import Image
 from deepdocforgery.data import (
     IMAGE_EXTENSIONS,
     ManifestRecord,
+    orient_mask_for_image,
     same_aspect_ratio,
     summarize_manifest,
+    upright_image_copy,
     validate_manifest_protocol,
     write_manifest,
+)
+from deepdocforgery.state import (
+    JsonlJournal,
+    StageLock,
+    command_text,
+    file_identity,
+    fingerprint,
+    save_stage_state,
+    sha256_file,
 )
 from deepdocforgery.telemetry import (
     RunLogger,
@@ -55,6 +67,66 @@ PROFILE_DEFAULTS = {
     ),
 }
 DEFAULT_PROCESSED_ROOT = Path("output/processed")
+DEFAULT_STATE_ROOT = Path("output/state/prepare")
+PREPARE_CONTRACT_VERSION = 2
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def _prepare_resume_command(args: argparse.Namespace) -> str:
+    parts: list[object] = [
+        "python",
+        "-m",
+        "deepdocforgery",
+        "prepare",
+        "--profile",
+        args.profile,
+        "--seed",
+        args.seed,
+        "--validation-fraction",
+        args.validation_fraction,
+        "--midv-test-fraction",
+        args.midv_test_fraction,
+        "--workers",
+        args.workers,
+        "--checkpoint-interval",
+        args.checkpoint_interval,
+        "--log-dir",
+        args.log_dir,
+    ]
+    for option, value in (
+        ("--doctamper-root", args.doctamper_root),
+        ("--midv-root", args.midv_root),
+        ("--output", args.output),
+        ("--processed-root", args.processed_root),
+        ("--state-root", args.state_root),
+        ("--limit-per-subset", args.limit_per_subset),
+    ):
+        if value is not None:
+            parts.extend((option, value))
+    if args.no_progress:
+        parts.append("--no-progress")
+    return command_text(parts)
+
+
+def _journal_records(journal: JsonlJournal | None) -> list[ManifestRecord]:
+    if journal is None:
+        return []
+    return [
+        ManifestRecord.from_dict(value, line_number=index)
+        for index, value in enumerate(journal.records, start=1)
+    ]
+
+
+def _checkpoint_journal(
+    journal: JsonlJournal | None,
+    *,
+    completed: int,
+    interval: int,
+    benchmark: str,
+) -> None:
+    if journal is not None and (completed == journal.total_items or completed % interval == 0):
+        journal.checkpoint("running", benchmark=benchmark)
 
 
 def _report_prepare_progress(
@@ -77,6 +149,25 @@ def _report_prepare_progress(
         total=total,
         resources=snapshot,
     )
+
+
+def _bounded_thread_map(
+    function: Callable[[T], U],
+    items: Iterable[T],
+    *,
+    workers: int,
+) -> Iterator[U]:
+    """Map in input order without queuing a large dataset into RAM."""
+
+    if workers <= 1:
+        for item in items:
+            yield function(item)
+        return
+    iterator = iter(items)
+    batch_size = workers * 2
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="prepare") as executor:
+        while batch := list(islice(iterator, batch_size)):
+            yield from executor.map(function, batch)
 
 
 def infer_subset(path: Path, requested: str = "auto") -> str:
@@ -170,7 +261,12 @@ def _doctamper_source_group(image: Image.Image, mask: Image.Image) -> str:
     return f"doctamper:masked-ahash-{np.packbits(bits.reshape(-1)).tobytes().hex()}"
 
 
-def _lmdb_items(source: Path, limit: int | None) -> Iterable[tuple[int, bytes, bytes]]:
+def _lmdb_items(
+    source: Path,
+    limit: int | None,
+    *,
+    start_position: int = 0,
+) -> Iterable[tuple[int, bytes, bytes]]:
     try:
         import lmdb
     except ImportError as error:
@@ -188,7 +284,9 @@ def _lmdb_items(source: Path, limit: int | None) -> Iterable[tuple[int, bytes, b
                 count = min(count, limit)
             zero_based = transaction.get(b"image-000000000") is not None
             offset = 0 if zero_based else 1
-            for position in range(count):
+            if not 0 <= start_position <= count:
+                raise ValueError(f"Invalid LMDB resume position {start_position}/{count}")
+            for position in range(start_position, count):
                 index = position + offset
                 image = transaction.get(f"image-{index:09d}".encode())
                 label = transaction.get(f"label-{index:09d}".encode())
@@ -218,6 +316,70 @@ def _lmdb_count(source: Path, limit: int | None) -> int:
         environment.close()
 
 
+def _prepare_doctamper_lmdb_record(
+    item: tuple[int, bytes, bytes],
+    *,
+    image_dir: Path,
+    mask_dir: Path,
+    benchmark: str,
+) -> ManifestRecord:
+    index, image_bytes, mask_bytes = item
+    sample_id = f"{benchmark}-{index:09d}"
+    with Image.open(io.BytesIO(image_bytes)) as image:
+        extension = ".jpg" if image.format == "JPEG" else ".png"
+        raw_image_size = image.size
+        upright, orientation = upright_image_copy(image)
+        image_size = upright.size
+        grouping_image = upright.convert("RGB")
+    with Image.open(io.BytesIO(mask_bytes)) as raw_mask:
+        grouping_mask = orient_mask_for_image(
+            raw_mask,
+            raw_image_size=raw_image_size,
+            upright_image_size=image_size,
+            image_orientation=orientation,
+        )
+    image_path = image_dir / f"{index:09d}{extension}"
+    if not image_path.exists():
+        temporary = image_path.with_suffix(image_path.suffix + ".tmp")
+        if extension == ".jpg":
+            temporary.write_bytes(image_bytes)
+        else:
+            with Image.open(io.BytesIO(image_bytes)) as image:
+                image.convert("RGB").save(temporary, format="PNG")
+        os.replace(temporary, image_path)
+    mask_path = mask_dir / f"{index:09d}.png"
+    if mask_path.exists():
+        with Image.open(mask_path) as mask:
+            saved_mask = orient_mask_for_image(
+                mask,
+                raw_image_size=raw_image_size,
+                upright_image_size=image_size,
+                image_orientation=orientation,
+            )
+            label = int(_mask_array(saved_mask).any())
+            if saved_mask.size != image_size:
+                raise ValueError(f"Image/mask size mismatch for {sample_id}")
+    else:
+        if grouping_mask.size != image_size:
+            raise ValueError(f"Image/mask size mismatch for {sample_id}")
+        label = _write_binary_mask(grouping_mask, mask_path)
+    return ManifestRecord(
+        sample_id=sample_id,
+        image=str(image_path.resolve()),
+        mask=str(mask_path.resolve()),
+        split="test",
+        label=label,
+        source_group=_doctamper_source_group(grouping_image, grouping_mask),
+        dataset="doctamper",
+        benchmark=benchmark,
+        classification_supervised=False,
+        localization_supervised=True,
+        adn_supervision="proxy",
+        tamper_type="text_tampering" if label else "none",
+        exif_transposed=orientation != 1,
+    )
+
+
 def _doctamper_lmdb_records(
     source: Path,
     prepared: Path,
@@ -225,68 +387,58 @@ def _doctamper_lmdb_records(
     benchmark: str,
     limit: int | None,
     run: RunLogger | None = None,
+    journal: JsonlJournal | None = None,
+    checkpoint_interval: int = 1000,
+    workers: int = 1,
 ) -> list[ManifestRecord]:
     image_dir = prepared / "images"
     mask_dir = prepared / "masks"
     image_dir.mkdir(parents=True, exist_ok=True)
     mask_dir.mkdir(parents=True, exist_ok=True)
-    records: list[ManifestRecord] = []
-    items = _lmdb_items(source, limit)
+    records = _journal_records(journal)
     total = _lmdb_count(source, limit)
+    start_position = len(records)
+    if start_position == total:
+        if run is not None:
+            run.info(
+                f"{benchmark}: reused {total}/{total} prepared records",
+                event="prepare_subset_resumed",
+                benchmark=benchmark,
+                completed=total,
+                total=total,
+            )
+        return records
+    items = _bounded_thread_map(
+        lambda item: _prepare_doctamper_lmdb_record(
+            item,
+            image_dir=image_dir,
+            mask_dir=mask_dir,
+            benchmark=benchmark,
+        ),
+        _lmdb_items(source, limit, start_position=start_position),
+        workers=workers,
+    )
     tracked = (
         run.progress(
             items,
             total=total,
+            initial=start_position,
             description=f"Prepare {benchmark}",
             unit="image",
         )
         if run is not None
         else items
     )
-    for position, (index, image_bytes, mask_bytes) in enumerate(tracked, start=1):
-        sample_id = f"{benchmark}-{index:09d}"
-        with Image.open(io.BytesIO(image_bytes)) as image:
-            extension = ".jpg" if image.format == "JPEG" else ".png"
-            image_size = image.size
-            grouping_image = image.convert("RGB").copy()
-        with Image.open(io.BytesIO(mask_bytes)) as raw_mask:
-            grouping_mask = raw_mask.copy()
-        image_path = image_dir / f"{index:09d}{extension}"
-        if not image_path.exists():
-            temporary = image_path.with_suffix(image_path.suffix + ".tmp")
-            if extension == ".jpg":
-                temporary.write_bytes(image_bytes)
-            else:
-                with Image.open(io.BytesIO(image_bytes)) as image:
-                    image.convert("RGB").save(temporary, format="PNG")
-            os.replace(temporary, image_path)
-        mask_path = mask_dir / f"{index:09d}.png"
-        if mask_path.exists():
-            with Image.open(mask_path) as mask:
-                label = int(_mask_array(mask).any())
-                if mask.size != image_size:
-                    raise ValueError(f"Image/mask size mismatch for {sample_id}")
-        else:
-            with Image.open(io.BytesIO(mask_bytes)) as mask:
-                if mask.size != image_size:
-                    raise ValueError(f"Image/mask size mismatch for {sample_id}")
-                label = _write_binary_mask(mask, mask_path)
-        records.append(
-            ManifestRecord(
-                sample_id=sample_id,
-                image=str(image_path.resolve()),
-                mask=str(mask_path.resolve()),
-                split="test",
-                label=label,
-                source_group=_doctamper_source_group(grouping_image, grouping_mask),
-                dataset="doctamper",
+    for position, record in enumerate(tracked, start=start_position + 1):
+        records.append(record)
+        if journal is not None:
+            journal.append(record.to_dict())
+            _checkpoint_journal(
+                journal,
+                completed=position,
+                interval=checkpoint_interval,
                 benchmark=benchmark,
-                classification_supervised=False,
-                localization_supervised=True,
-                adn_supervision="proxy",
-                tamper_type="text_tampering" if label else "none",
             )
-        )
         _report_prepare_progress(
             run,
             tracked,
@@ -313,6 +465,8 @@ def _doctamper_extracted_records(
     benchmark: str,
     limit: int | None,
     run: RunLogger | None = None,
+    journal: JsonlJournal | None = None,
+    checkpoint_interval: int = 1000,
 ) -> list[ManifestRecord]:
     image_dir = source / "images"
     mask_dir = source / ("labels" if (source / "labels").is_dir() else "masks")
@@ -323,43 +477,72 @@ def _doctamper_extracted_records(
     )
     if limit is not None:
         paths = paths[:limit]
-    records: list[ManifestRecord] = []
+    records = _journal_records(journal)
+    start_position = len(records)
+    if start_position == len(paths):
+        if run is not None:
+            run.info(
+                f"{benchmark}: reused {len(paths)}/{len(paths)} prepared records",
+                event="prepare_subset_resumed",
+                benchmark=benchmark,
+                completed=len(paths),
+                total=len(paths),
+            )
+        return records
+    remaining_paths = paths[start_position:]
     tracked = (
         run.progress(
-            paths,
+            remaining_paths,
             total=len(paths),
+            initial=start_position,
             description=f"Prepare {benchmark}",
             unit="image",
         )
         if run is not None
-        else paths
+        else remaining_paths
     )
-    for position, image_path in enumerate(tracked, start=1):
+    for position, image_path in enumerate(tracked, start=start_position + 1):
         relative = image_path.relative_to(image_dir)
         mask_path = _paired_file(mask_dir, relative.with_suffix(""))
-        with Image.open(image_path) as image, Image.open(mask_path) as mask:
+        with Image.open(image_path) as raw_image, Image.open(mask_path) as raw_mask:
+            raw_image_size = raw_image.size
+            image, orientation = upright_image_copy(raw_image)
+            mask = orient_mask_for_image(
+                raw_mask,
+                raw_image_size=raw_image_size,
+                upright_image_size=image.size,
+                image_orientation=orientation,
+            )
             if image.size != mask.size:
                 raise ValueError(f"Image/mask size mismatch: {image_path} vs {mask_path}")
             label = int(_mask_array(mask).any())
             source_group = _doctamper_source_group(image, mask)
         token = relative.with_suffix("").as_posix().replace("/", "-")
         sample_id = f"{benchmark}-{token}"
-        records.append(
-            ManifestRecord(
-                sample_id=sample_id,
-                image=str(image_path.resolve()),
-                mask=str(mask_path.resolve()),
-                split="test",
-                label=label,
-                source_group=source_group,
-                dataset="doctamper",
-                benchmark=benchmark,
-                classification_supervised=False,
-                localization_supervised=True,
-                adn_supervision="proxy",
-                tamper_type="text_tampering" if label else "none",
-            )
+        record = ManifestRecord(
+            sample_id=sample_id,
+            image=str(image_path.resolve()),
+            mask=str(mask_path.resolve()),
+            split="test",
+            label=label,
+            source_group=source_group,
+            dataset="doctamper",
+            benchmark=benchmark,
+            classification_supervised=False,
+            localization_supervised=True,
+            adn_supervision="proxy",
+            tamper_type="text_tampering" if label else "none",
+            exif_transposed=orientation != 1,
         )
+        records.append(record)
+        if journal is not None:
+            journal.append(record.to_dict())
+            _checkpoint_journal(
+                journal,
+                completed=position,
+                interval=checkpoint_interval,
+                benchmark=benchmark,
+            )
         _report_prepare_progress(
             run,
             tracked,
@@ -380,27 +563,104 @@ def prepare_doctamper(
     validation_fraction: float,
     limit: int | None,
     run: RunLogger | None = None,
+    state_root: Path | None = None,
+    resume: bool = True,
+    checkpoint_interval: int = 1000,
+    workers: int = 1,
 ) -> list[ManifestRecord]:
     records: list[ManifestRecord] = []
     for directory_name, benchmark in DOCTAMPER_SUBSETS.items():
         source = root / directory_name
         if not source.is_dir():
             raise FileNotFoundError(f"Required DocTamper subset is missing: {source}")
-        if (source / "data.mdb").is_file():
-            subset = _doctamper_lmdb_records(
-                source,
-                prepared_root / directory_name,
-                benchmark=benchmark,
-                limit=limit,
-                run=run,
-            )
+        lmdb_path = source / "data.mdb"
+        if lmdb_path.is_file():
+            total = _lmdb_count(source, limit)
+            source_contract: dict[str, Any] = {
+                "kind": "lmdb",
+                "data": file_identity(lmdb_path),
+            }
         else:
-            subset = _doctamper_extracted_records(
-                source,
-                benchmark=benchmark,
-                limit=limit,
-                run=run,
+            image_dir = source / "images"
+            mask_dir = source / ("labels" if (source / "labels").is_dir() else "masks")
+            paths = sorted(
+                path
+                for path in image_dir.rglob("*")
+                if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
             )
+            total = min(len(paths), limit) if limit is not None else len(paths)
+            inventory = []
+            for path in paths[:total]:
+                relative = path.relative_to(image_dir)
+                mask_path = _paired_file(mask_dir, relative.with_suffix(""))
+                image_stat = path.stat()
+                mask_stat = mask_path.stat()
+                inventory.append(
+                    (
+                        relative.as_posix(),
+                        image_stat.st_size,
+                        image_stat.st_mtime_ns,
+                        mask_path.relative_to(mask_dir).as_posix(),
+                        mask_stat.st_size,
+                        mask_stat.st_mtime_ns,
+                    )
+                )
+            source_contract = {
+                "kind": "extracted",
+                "root": str(source.resolve()),
+                "inventory": fingerprint(inventory),
+            }
+        contract = fingerprint(
+            {
+                "version": PREPARE_CONTRACT_VERSION,
+                "dataset": "doctamper",
+                "benchmark": benchmark,
+                "source": source_contract,
+                "prepared_root": str(prepared_root.resolve()),
+                "limit": limit,
+            }
+        )
+        journal_context: JsonlJournal | None = None
+        if state_root is not None:
+            journal_context = JsonlJournal(
+                records_path=state_root / f"{benchmark}.records.jsonl",
+                state_path=state_root / f"{benchmark}.state.json",
+                stage=f"prepare/{benchmark}",
+                contract=contract,
+                total_items=total,
+                resume=resume,
+            )
+        try:
+            if lmdb_path.is_file():
+                subset = _doctamper_lmdb_records(
+                    source,
+                    prepared_root / directory_name,
+                    benchmark=benchmark,
+                    limit=limit,
+                    run=run,
+                    journal=journal_context,
+                    checkpoint_interval=checkpoint_interval,
+                    workers=workers,
+                )
+            else:
+                subset = _doctamper_extracted_records(
+                    source,
+                    benchmark=benchmark,
+                    limit=limit,
+                    run=run,
+                    journal=journal_context,
+                    checkpoint_interval=checkpoint_interval,
+                )
+            if journal_context is not None:
+                journal_context.finish(benchmark=benchmark)
+        except BaseException as error:
+            if journal_context is not None:
+                status = "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
+                journal_context.checkpoint(status, benchmark=benchmark, error=str(error))
+            raise
+        finally:
+            if journal_context is not None:
+                journal_context.close()
         if benchmark == "doctamper-training":
             subset = _split_groups(
                 subset,
@@ -477,12 +737,21 @@ def _prepare_midv_record(
     if "forgery_type" in annotation and ((category == "authentic") != (declared == "authentic")):
         raise ValueError(f"MIDV category and annotation disagree: {image_path}")
     authentic = category == "authentic" or declared == "authentic"
-    with Image.open(image_path) as image, Image.open(mask_path) as mask:
+    with Image.open(image_path) as raw_image, Image.open(mask_path) as raw_mask:
+        raw_image_size = raw_image.size
+        image, orientation = upright_image_copy(raw_image)
+        mask = orient_mask_for_image(
+            raw_mask,
+            raw_image_size=raw_image_size,
+            upright_image_size=image.size,
+            image_orientation=orientation,
+        )
         mask_scale_aligned = image.size != mask.size
         if mask_scale_aligned and not same_aspect_ratio(image.size, mask.size):
             raise ValueError(
                 "Image/mask aspect-ratio mismatch: "
-                f"{image_path} {image.size} vs {mask_path} {mask.size}"
+                f"{image_path} raw={raw_image_size}, upright={image.size}, "
+                f"orientation={orientation} vs {mask_path} {mask.size}"
             )
         has_mask = bool(_mask_array(mask).any())
     if authentic and has_mask:
@@ -504,6 +773,7 @@ def _prepare_midv_record(
         adn_supervision="proxy",
         tamper_type="none" if authentic else declared,
         mask_scale_aligned=mask_scale_aligned,
+        exif_transposed=orientation != 1,
     )
 
 
@@ -540,6 +810,9 @@ def prepare_midv(
     limit: int | None,
     workers: int = 1,
     run: RunLogger | None = None,
+    state_root: Path | None = None,
+    resume: bool = True,
+    checkpoint_interval: int = 1000,
 ) -> list[ManifestRecord]:
     image_root = root / "images"
     mask_root = root / "masks"
@@ -566,27 +839,102 @@ def prepare_midv(
             dataset="midv",
             images=len(image_paths),
         )
-    items = _bounded_midv_records(root, image_root, mask_root, image_paths, workers)
+    journal: JsonlJournal | None = None
+    if state_root is not None:
+        inventory: list[dict[str, Any]] = []
+        for image_path in image_paths:
+            relative = image_path.relative_to(image_root)
+            mask_path = _paired_file(mask_root, relative.with_suffix(""))
+            annotation_candidates = (
+                root / "annotations" / relative.with_suffix(".json"),
+                image_path.with_suffix(".json"),
+            )
+            annotation_path = next(
+                (candidate for candidate in annotation_candidates if candidate.is_file()), None
+            )
+            inventory.append(
+                {
+                    "relative": relative.as_posix(),
+                    "image": file_identity(image_path),
+                    "mask": file_identity(mask_path),
+                    "annotation": (
+                        None if annotation_path is None else file_identity(annotation_path)
+                    ),
+                }
+            )
+        contract = fingerprint(
+            {
+                "version": PREPARE_CONTRACT_VERSION,
+                "dataset": "midv",
+                "root": str(root.resolve()),
+                "inventory": fingerprint(inventory),
+                "limit": limit,
+            }
+        )
+        journal = JsonlJournal(
+            records_path=state_root / "midv-dm.records.jsonl",
+            state_path=state_root / "midv-dm.state.json",
+            stage="prepare/midv-dm",
+            contract=contract,
+            total_items=len(image_paths),
+            resume=resume,
+        )
+    records = _journal_records(journal)
+    start_position = len(records)
+    if run is not None and start_position:
+        run.info(
+            f"midv-dm: resuming after {start_position}/{len(image_paths)} records",
+            event="prepare_subset_resumed",
+            benchmark="midv-dm",
+            completed=start_position,
+            total=len(image_paths),
+        )
+    items = _bounded_midv_records(
+        root,
+        image_root,
+        mask_root,
+        image_paths[start_position:],
+        workers,
+    )
     tracked = (
         run.progress(
             items,
             total=len(image_paths),
+            initial=start_position,
             description="Prepare midv-dm",
             unit="image",
         )
         if run is not None
         else items
     )
-    records: list[ManifestRecord] = []
-    for position, record in enumerate(tracked, start=1):
-        records.append(record)
-        _report_prepare_progress(
-            run,
-            tracked,
-            completed=position,
-            total=len(image_paths),
-            dataset="midv-dm",
-        )
+    try:
+        for position, record in enumerate(tracked, start=start_position + 1):
+            records.append(record)
+            if journal is not None:
+                journal.append(record.to_dict())
+                _checkpoint_journal(
+                    journal,
+                    completed=position,
+                    interval=checkpoint_interval,
+                    benchmark="midv-dm",
+                )
+            _report_prepare_progress(
+                run,
+                tracked,
+                completed=position,
+                total=len(image_paths),
+                dataset="midv-dm",
+            )
+        if journal is not None:
+            journal.finish(benchmark="midv-dm")
+    except BaseException as error:
+        if journal is not None:
+            status = "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
+            journal.checkpoint(status, benchmark="midv-dm", error=str(error))
+        raise
+    finally:
+        if journal is not None:
+            journal.close()
     if not records:
         raise FileNotFoundError(f"No MIDV images found under {image_root}")
     return _split_groups(
@@ -620,20 +968,38 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workers",
         default="auto",
-        help="Parallel MIDV validation workers: auto or a non-negative integer",
+        help="Parallel dataset preparation workers: auto or a non-negative integer",
     )
     parser.add_argument("--log-dir", type=Path, default=Path("output/logs"))
+    parser.add_argument(
+        "--state-root",
+        type=Path,
+        help="Resume-state directory (default: output/state/prepare/<profile>)",
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=1000,
+        help="Persist preparation progress after this many records",
+    )
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Ignore prior preparation journals; already exported image files remain reusable",
+    )
     parser.add_argument("--no-progress", action="store_true")
     return parser.parse_args()
 
 
-def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
+def _prepare_unlocked(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     if not 0.0 <= args.validation_fraction < 1.0:
         raise ValueError("validation-fraction must be in [0,1)")
     if not 0.0 <= args.midv_test_fraction < 1.0:
         raise ValueError("midv-test-fraction must be in [0,1)")
     if args.validation_fraction + args.midv_test_fraction >= 1.0:
         raise ValueError("MIDV validation and test fractions must leave training data")
+    if args.checkpoint_interval < 1:
+        raise ValueError("--checkpoint-interval must be positive")
     default_doc, default_midv, default_output = PROFILE_DEFAULTS[args.profile]
     doctamper_root = (args.doctamper_root or default_doc).resolve()
     midv_root = (args.midv_root or default_midv).resolve()
@@ -641,11 +1007,12 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     prepared = (
         args.processed_root or DEFAULT_PROCESSED_ROOT / args.profile / "doctamper"
     ).resolve()
+    state_root = (args.state_root or DEFAULT_STATE_ROOT / args.profile).resolve()
     compute = configure_compute(torch.device("cpu"), cpu_threads="auto")
     workers = resolve_worker_count(args.workers)
     run.info(
         f"Prepare profile={args.profile} | CPU threads={compute['torch_threads']} | "
-        f"MIDV workers={workers}",
+        f"preparation workers={workers}",
         event="prepare_started",
         profile=args.profile,
         doctamper_root=str(doctamper_root),
@@ -654,6 +1021,8 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         prepared_root=str(prepared),
         compute=compute,
         workers=workers,
+        resume=not args.fresh,
+        state_root=str(state_root),
     )
     run.resource(torch.device("cpu"), event="resources_initial")
     records = prepare_doctamper(
@@ -663,6 +1032,10 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         validation_fraction=args.validation_fraction,
         limit=args.limit_per_subset,
         run=run,
+        state_root=state_root,
+        resume=not args.fresh,
+        checkpoint_interval=args.checkpoint_interval,
+        workers=workers,
     )
     doctamper_count = len(records)
     records.extend(
@@ -674,6 +1047,9 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             limit=args.limit_per_subset,
             workers=workers,
             run=run,
+            state_root=state_root,
+            resume=not args.fresh,
+            checkpoint_interval=args.checkpoint_interval,
         )
     )
     scale_aligned_masks = sum(record.mask_scale_aligned for record in records)
@@ -690,7 +1066,7 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     records.sort(key=lambda record: (record.split, record.dataset, record.sample_id))
     validate_manifest_protocol(records)
     write_manifest(records, output)
-    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    digest = sha256_file(output)
     summary = summarize_manifest(records)
     summary.update(
         {
@@ -703,6 +1079,7 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             "resources": resource_snapshot(torch.device("cpu")),
             "text_log": str(run.text_path),
             "events_log": str(run.events_path),
+            "resume_state": str(state_root / "state.json"),
             "protocol": {
                 "doctamper_training": "train/validation only",
                 "doctamper_testing_fcd_scd": "test only",
@@ -735,6 +1112,85 @@ def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         resources=summary["resources"],
     )
     return summary
+
+
+def _prepare(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
+    """Run preparation under one lock and persist top-level recovery state."""
+
+    default_doc, default_midv, default_output = PROFILE_DEFAULTS[args.profile]
+    doctamper_root = (args.doctamper_root or default_doc).resolve()
+    midv_root = (args.midv_root or default_midv).resolve()
+    output = (args.output or default_output).resolve()
+    state_root = (args.state_root or DEFAULT_STATE_ROOT / args.profile).resolve()
+    state_path = state_root / "state.json"
+    resume_command = _prepare_resume_command(args)
+    prepared_root = (
+        args.processed_root or DEFAULT_PROCESSED_ROOT / args.profile / "doctamper"
+    ).resolve()
+    contract = fingerprint(
+        {
+            "version": PREPARE_CONTRACT_VERSION,
+            "profile": args.profile,
+            "doctamper_root": str(doctamper_root),
+            "midv_root": str(midv_root),
+            "manifest": str(output),
+            "processed_root": str(prepared_root),
+            "seed": args.seed,
+            "validation_fraction": args.validation_fraction,
+            "midv_test_fraction": args.midv_test_fraction,
+            "limit_per_subset": args.limit_per_subset,
+        }
+    )
+    state_root.mkdir(parents=True, exist_ok=True)
+    with StageLock(state_root / "prepare.lock", stage=f"prepare/{args.profile}"):
+        save_stage_state(
+            state_path,
+            stage=f"prepare/{args.profile}",
+            contract=contract,
+            status="running",
+            run_id=run.run_id,
+            manifest=str(output),
+            resume_enabled=not args.fresh,
+            resume_command=resume_command,
+            text_log=str(run.text_path),
+            events_log=str(run.events_path),
+        )
+        try:
+            result = _prepare_unlocked(args, run)
+        except BaseException as error:
+            save_stage_state(
+                state_path,
+                stage=f"prepare/{args.profile}",
+                contract=contract,
+                status="interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
+                run_id=run.run_id,
+                manifest=str(output),
+                resume_enabled=True,
+                resume_command=resume_command,
+                error_type=type(error).__name__,
+                error=str(error),
+                text_log=str(run.text_path),
+                events_log=str(run.events_path),
+                resources=run.last_resources,
+            )
+            raise
+        save_stage_state(
+            state_path,
+            stage=f"prepare/{args.profile}",
+            contract=contract,
+            status="completed",
+            run_id=run.run_id,
+            manifest=str(output),
+            manifest_sha256=sha256_file(output),
+            samples=result["samples"],
+            summary=result["summary"],
+            resume_enabled=True,
+            resume_command=resume_command,
+            text_log=str(run.text_path),
+            events_log=str(run.events_path),
+            resources=result["resources"],
+        )
+        return result
 
 
 def main() -> None:

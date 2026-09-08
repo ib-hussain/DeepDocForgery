@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, ImageOps
 from torch import Tensor
 from torch.utils.data import Dataset
 
@@ -31,6 +31,7 @@ VALID_SPLITS = ("train", "val", "test")
 VALID_ADN_SUPERVISION = ("none", "proxy", "ground_truth")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
 ASPECT_RATIO_TOLERANCE = 1e-3
+EXIF_ORIENTATION_TAG = 274
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class ManifestRecord:
     noise_type: str | int | None = None
     noise_strength: float | None = None
     mask_scale_aligned: bool = False
+    exif_transposed: bool = False
 
     @classmethod
     def from_dict(cls, value: dict[str, Any], *, line_number: int) -> ManifestRecord:
@@ -104,6 +106,9 @@ class ManifestRecord:
         mask_scale_aligned = value.get("mask_scale_aligned", False)
         if not isinstance(mask_scale_aligned, bool):
             raise ValueError(f"Manifest line {line_number} mask_scale_aligned must be boolean")
+        exif_transposed = value.get("exif_transposed", False)
+        if not isinstance(exif_transposed, bool):
+            raise ValueError(f"Manifest line {line_number} exif_transposed must be boolean")
         return cls(
             sample_id=sample_id,
             image=str(value["image"]),
@@ -123,6 +128,7 @@ class ManifestRecord:
             noise_type=value.get("noise_type"),
             noise_strength=(None if noise_strength is None else float(noise_strength)),
             mask_scale_aligned=mask_scale_aligned,
+            exif_transposed=exif_transposed,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -145,6 +151,7 @@ class ManifestRecord:
             "noise_type": self.noise_type,
             "noise_strength": self.noise_strength,
             "mask_scale_aligned": self.mask_scale_aligned,
+            "exif_transposed": self.exif_transposed,
         }
         return {key: value for key, value in values.items() if value is not None}
 
@@ -227,6 +234,7 @@ def summarize_manifest(records: list[ManifestRecord]) -> dict[str, Any]:
         "classification_supervised": sum(record.classification_supervised for record in records),
         "adn_supervision": dict(Counter(record.adn_supervision for record in records)),
         "scale_aligned_masks": sum(record.mask_scale_aligned for record in records),
+        "exif_transposed_images": sum(record.exif_transposed for record in records),
         "degradation_supervised": sum(
             record.jpeg_quality is not None
             or record.noise_type is not None
@@ -263,6 +271,59 @@ def same_aspect_ratio(
     first_cross = first_width * second_height
     second_cross = second_width * first_height
     return abs(first_cross - second_cross) / max(first_cross, second_cross) <= tolerance
+
+
+def exif_orientation(image: Image.Image) -> int:
+    """Return a normalised JPEG EXIF orientation value."""
+
+    try:
+        value = int(image.getexif().get(EXIF_ORIENTATION_TAG, 1))
+    except (AttributeError, TypeError, ValueError):
+        return 1
+    return value if 1 <= value <= 8 else 1
+
+
+def upright_image_copy(image: Image.Image) -> tuple[Image.Image, int]:
+    """Materialise the visually upright pixel grid and its source orientation."""
+
+    orientation = exif_orientation(image)
+    return ImageOps.exif_transpose(image).copy(), orientation
+
+
+def _apply_orientation(image: Image.Image, orientation: int) -> Image.Image:
+    operations = {
+        2: Image.Transpose.FLIP_LEFT_RIGHT,
+        3: Image.Transpose.ROTATE_180,
+        4: Image.Transpose.FLIP_TOP_BOTTOM,
+        5: Image.Transpose.TRANSPOSE,
+        6: Image.Transpose.ROTATE_270,
+        7: Image.Transpose.TRANSVERSE,
+        8: Image.Transpose.ROTATE_90,
+    }
+    operation = operations.get(orientation)
+    return image.copy() if operation is None else image.transpose(operation)
+
+
+def orient_mask_for_image(
+    mask: Image.Image,
+    *,
+    raw_image_size: tuple[int, int],
+    upright_image_size: tuple[int, int],
+    image_orientation: int,
+) -> Image.Image:
+    """Put a target mask on the JPEG's visually upright orientation.
+
+    MIDV masks are normally already upright.  Some camera JPEGs store a
+    landscape pixel array plus EXIF rotation; in that case the mask can either
+    be upright already or share the raw array orientation.  Aspect ratio makes
+    those cases unambiguous for the 5--8 orientations.
+    """
+
+    if same_aspect_ratio(mask.size, upright_image_size):
+        return mask.copy()
+    if image_orientation != 1 and same_aspect_ratio(mask.size, raw_image_size):
+        return _apply_orientation(mask, image_orientation)
+    return mask.copy()
 
 
 def align_mask_to_image(mask: Image.Image, image_size: tuple[int, int]) -> Image.Image:
@@ -480,15 +541,27 @@ class ForgeryManifestDataset(Dataset[dict[str, Any]]):
         mask_path = None if record.mask is None else self._resolve(record.mask)
         adn_path = None if record.adn_text_mask is None else self._resolve(record.adn_text_mask)
         with Image.open(image_path) as image_file:
-            image = image_file.convert("RGB")
+            raw_image_size = image_file.size
+            upright, orientation = upright_image_copy(image_file)
+            image = upright.convert("RGB")
         mask = None
         if mask_path is not None:
             with Image.open(mask_path) as mask_file:
-                mask = mask_file.convert("L")
+                mask = orient_mask_for_image(
+                    mask_file,
+                    raw_image_size=raw_image_size,
+                    upright_image_size=image.size,
+                    image_orientation=orientation,
+                ).convert("L")
         adn_mask = None
         if adn_path is not None:
             with Image.open(adn_path) as adn_file:
-                adn_mask = adn_file.convert("L")
+                adn_mask = orient_mask_for_image(
+                    adn_file,
+                    raw_image_size=raw_image_size,
+                    upright_image_size=image.size,
+                    image_orientation=orientation,
+                ).convert("L")
         # MIDV-DM distributes some masks on a lower-resolution grid than its
         # 2268x4032 photographs. Their aspect ratios are identical, so nearest
         # neighbour scaling preserves the labelled coordinates before any
@@ -533,6 +606,7 @@ class ForgeryManifestDataset(Dataset[dict[str, Any]]):
         native_geometry = image.size == (self.image_size[1], self.image_size[0])
         can_use_exact = (
             not augmented
+            and orientation == 1
             and native_geometry
             and image_path.suffix.lower() in {".jpg", ".jpeg"}
             and image.size[0] % 8 == 0

@@ -13,7 +13,10 @@
   under the same split and budget.
 - Keep all generated run evidence beneath `output/`; keep `data/` input-only.
 - Preserve the command `.log`, event `.jsonl`, `latest.json`, model
-  `status.json`, and epoch `metrics.jsonl` files for every reported run.
+  `status.json`, epoch `metrics.jsonl`, and matching `output/state/` files for
+  every reported run.
+- Keep resume fingerprints and record journals with the exact input data they
+  describe; never edit a journal manually or transplant it across datasets.
 - Inspect `supervision_draws`, `main/image_initial`, and `main/image_final` in
   every epoch log before claiming that an architectural branch was exercised.
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deep-doc-forgery"
-version = "0.5.0"
+version = "0.5.1"
 description = "Combined DocTamper and MIDV-DM document-forgery research pipeline"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,7 +34,7 @@ where = ["."]
 include = ["deepdocforgery*"]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra -p no:launch_testing -p no:launch_testing_ros -p no:ament_lint"
 pythonpath = ["."]
 testpaths = ["tests"]
 cache_dir = "output/logs/pytest-cache"

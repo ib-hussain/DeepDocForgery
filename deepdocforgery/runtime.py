@@ -7,7 +7,7 @@ import os
 import random
 import time
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from itertools import islice
 from pathlib import Path
 from typing import Any
@@ -101,6 +101,33 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         torch.use_deterministic_algorithms(True, warn_only=True)
 
 
+def capture_rng_state() -> dict[str, Any]:
+    """Capture model-side random generators for an epoch-boundary resume."""
+
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    }
+
+
+def restore_rng_state(state: Mapping[str, Any] | None) -> bool:
+    """Restore available generators; return false for a legacy checkpoint."""
+
+    if not isinstance(state, Mapping):
+        return False
+    if state.get("python") is not None:
+        random.setstate(state["python"])
+    if state.get("numpy") is not None:
+        np.random.set_state(state["numpy"])
+    if state.get("torch") is not None:
+        torch.set_rng_state(state["torch"])
+    if torch.cuda.is_available() and state.get("cuda") is not None:
+        torch.cuda.set_rng_state_all(state["cuda"])
+    return True
+
+
 def _seed_worker(worker_id: int) -> None:
     del worker_id
     # DataLoader workers decode/augment data. Giving every worker all CPU
@@ -118,6 +145,7 @@ def create_dataloader(
     *,
     split: str,
     shuffle: bool,
+    record_offset: int = 0,
 ) -> DataLoader[ManifestBatch]:
     data_config = config.get("data", {})
     training_config = config.get("training", {})
@@ -149,6 +177,12 @@ def create_dataloader(
         ),
         exact_dct_probability=float(data_config.get("exact_dct_probability", 0.0)),
     )
+    if record_offset < 0 or record_offset > len(dataset.records):
+        raise ValueError(f"record_offset {record_offset} is outside 0..{len(dataset.records)}")
+    if record_offset and shuffle:
+        raise ValueError("record_offset is only valid for deterministic, unshuffled loaders")
+    if record_offset:
+        dataset.records = dataset.records[record_offset:]
     seed = int(training_config.get("seed", 7))
     generator = torch.Generator().manual_seed(seed + {"train": 0, "val": 1, "test": 2}[split])
     sampler = None
@@ -183,7 +217,7 @@ def create_dataloader(
         num_workers=number_of_workers,
         pin_memory=bool(data_config.get("pin_memory", torch.cuda.is_available())),
         persistent_workers=(
-            bool(data_config.get("persistent_workers", True)) and number_of_workers > 0
+            bool(data_config.get("persistent_workers", False)) and number_of_workers > 0
         ),
         collate_fn=collate_manifest_samples,
         worker_init_fn=_seed_worker,
@@ -238,6 +272,16 @@ class _LossAverages:
         denominator = max(1, self.examples)
         return {f"{prefix}/{name}": value / denominator for name, value in self.sums.items()}
 
+    def state_dict(self) -> dict[str, Any]:
+        return {"sums": dict(self.sums), "examples": self.examples}
+
+    def load_state_dict(self, state: Mapping[str, Any]) -> None:
+        sums = state.get("sums", {})
+        if not isinstance(sums, Mapping):
+            raise ValueError("Loss resume state sums must be an object")
+        self.sums = defaultdict(float, {str(key): float(value) for key, value in sums.items()})
+        self.examples = int(state.get("examples", 0))
+
 
 @torch.no_grad()
 def evaluate_model(
@@ -252,6 +296,10 @@ def evaluate_model(
     run: RunLogger | None = None,
     progress_description: str = "Evaluation",
     resource_interval_batches: int = 25,
+    initial_state: Mapping[str, Any] | None = None,
+    state_callback: Callable[[dict[str, Any]], None] | None = None,
+    total_batches_override: int | None = None,
+    state_interval_batches: int = 100,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     model.eval()
@@ -268,15 +316,51 @@ def evaluate_model(
     total_samples = 0
     processed_batches = 0
     losses = _LossAverages()
-    total_batches = len(loader)
+    prior_duration = 0.0
+    if initial_state is not None:
+        metric_state = initial_state.get("metrics")
+        if not isinstance(metric_state, dict):
+            raise ValueError("Evaluation resume state is missing aggregate metrics")
+        metrics.load_state_dict(metric_state)
+        raw_benchmarks = initial_state.get("benchmark_metrics", {})
+        if not isinstance(raw_benchmarks, Mapping):
+            raise ValueError("Evaluation resume benchmark metrics must be an object")
+        for name, value in raw_benchmarks.items():
+            if not isinstance(value, dict):
+                raise ValueError("Evaluation resume benchmark state must be an object")
+            current = StreamingForgeryMetrics(
+                mask_threshold=float(metric_config.get("mask_threshold", 0.5)),
+                image_threshold=float(metric_config.get("image_threshold", 0.5)),
+                minimum_instance_area=int(metric_config.get("minimum_instance_area", 16)),
+                instance_iou_threshold=float(metric_config.get("instance_iou_threshold", 0.5)),
+                catastrophic_f1_threshold=float(
+                    metric_config.get("catastrophic_f1_threshold", 0.1)
+                ),
+            )
+            current.load_state_dict(value)
+            benchmark_metrics[str(name)] = current
+        loss_state = initial_state.get("losses")
+        if isinstance(loss_state, Mapping):
+            losses.load_state_dict(loss_state)
+        exact_samples = int(initial_state.get("exact_samples", 0))
+        total_samples = int(initial_state.get("processed_samples", 0))
+        processed_batches = int(initial_state.get("processed_batches", 0))
+        prior_duration = float(initial_state.get("elapsed_seconds", 0.0))
+    total_batches = (
+        processed_batches + len(loader)
+        if total_batches_override is None
+        else int(total_batches_override)
+    )
     if maximum_batches is not None:
         total_batches = min(total_batches, maximum_batches)
-    batches = islice(loader, total_batches)
-    indexed_loader = enumerate(batches)
+    remaining_batches = max(0, total_batches - processed_batches)
+    batches = islice(loader, remaining_batches)
+    indexed_loader = enumerate(batches, start=processed_batches)
     progress = (
         run.progress(
             indexed_loader,
             total=total_batches,
+            initial=processed_batches,
             description=progress_description,
             unit="batch",
         )
@@ -363,6 +447,23 @@ def evaluate_model(
                 samples=total_samples,
                 resources=snapshot,
             )
+        if state_callback is not None and (
+            processed_batches == total_batches or processed_batches % state_interval_batches == 0
+        ):
+            state_callback(
+                {
+                    "processed_batches": processed_batches,
+                    "processed_samples": total_samples,
+                    "exact_samples": exact_samples,
+                    "elapsed_seconds": prior_duration + time.perf_counter() - started,
+                    "metrics": metrics.state_dict(),
+                    "benchmark_metrics": {
+                        name: value.state_dict()
+                        for name, value in sorted(benchmark_metrics.items())
+                    },
+                    "losses": losses.state_dict(),
+                }
+            )
     if run is not None:
         progress.close()
     if processed_batches == 0:
@@ -376,7 +477,7 @@ def evaluate_model(
     result["evidence/exact_dct_fraction"] = exact_samples / total_samples if total_samples else 0.0
     if criterion is not None:
         result.update(losses.compute())
-    duration = max(time.perf_counter() - started, 1e-9)
+    duration = max(prior_duration + time.perf_counter() - started, 1e-9)
     result.update(
         {
             "performance/duration_seconds": duration,
