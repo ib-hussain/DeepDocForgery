@@ -169,6 +169,14 @@ EXIF rotation are transposed to the same upright geometry; already-upright and
 landscape image/mask pairs are also accepted. Padding is excluded from losses
 and metrics.
 
+## ROS/pytest isolation
+
+The repository pytest configuration blocks ROS 2 launch/ament pytest plugins that
+can be auto-discovered when `/opt/ros/<distro>/...` is present on `PYTHONPATH`.
+This means a normal `python -m pytest -q` remains project-local even in a shell
+that previously sourced ROS. The setup scripts additionally set
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` while validating a fresh environment.
+
 ## CUDA full-data start
 
 Expected paths:

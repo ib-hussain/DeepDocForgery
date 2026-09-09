@@ -1,5 +1,10 @@
 # Migrating an existing checkout
 
+For v0.5.3, no dataset or preparation regeneration is required when upgrading
+from v0.5.2. Keep `output/manifests/`, `output/processed/`, and
+`output/state/prepare/` intact. Reinstall the editable package and rerun tests and
+`doctor`; the failed v0.5.2 doctor state is volatile and will be refreshed.
+
 Install this release into a fresh directory. Do not duplicate the 100+ GB
 datasets merely to update the Python code.
 

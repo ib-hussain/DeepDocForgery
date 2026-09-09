@@ -66,16 +66,12 @@ python -m deepdocforgery prepare --profile cuda
 python -m deepdocforgery doctor --profile cuda
 python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full
 
-After putting the v0.5.2 code over the existing checkout:
+
+On the CUDA machine, copy/overlay the v0.5.3 code into the existing checkout while preserving data/ and output/, then run only these commands:
 
 source .venv-cuda/bin/activate
-
-Then update the editable installation:
 python -m pip install -e ".[dev,data,exact-jpeg,cuda,download]"
-Run the tests:
 python -m pytest -q
-Then resume preparation:
-python -m deepdocforgery prepare --profile cuda && python -m deepdocforgery doctor --profile cuda
-And:
+python -m deepdocforgery doctor --profile cuda
 python -m deepdocforgery status
 ```

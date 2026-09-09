@@ -3,4 +3,4 @@
 from deepdocforgery.model import DeepDocForgeryModel, DeepDocForgeryOutput
 
 __all__ = ["DeepDocForgeryModel", "DeepDocForgeryOutput"]
-__version__ = "0.5.2"
+__version__ = "0.5.3"

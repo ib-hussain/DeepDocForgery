@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.3
+
+- Fixed `doctor` crashing at its first progress increment with current `tqdm.auto`
+  (`TypeError: 'tqdm_asyncio' object is not an iterator`). Counter-style doctor
+  progress now uses `progress.update(1)` while iterable progress remains unchanged.
+- Hardened ordinary `python -m pytest` runs against ROS 2/Jazzy `pytest11`
+  autoload leakage by blocking the concrete
+  `launch_testing_ros_pytest_entrypoint` plugin plus the related launch/ament
+  plugins that are irrelevant to this repository. Setup-script isolation remains
+  enabled as a second layer.
+- Added regressions that exercise doctor with the real tqdm implementation and
+  simulate the offending ROS pytest entry point in a subprocess.
+- Kept the v0.5.1/v0.5.2 preparation journal contract unchanged. Existing
+  178,999-sample CUDA manifests, prepared DocTamper exports, MIDV records, and
+  preparation state remain reusable.
+
 ## 0.5.2
 
 - Fixed full DocTamper preparation failing after successful conversion when the

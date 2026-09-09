@@ -305,7 +305,7 @@ def _doctor(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
                     runtime_issues.append(f"Other CUDA compute processes are active: {preview}")
     issues.extend(runtime_issues)
     stages["runtime"] = "passed" if not runtime_issues else "attention_required"
-    next(progress)
+    progress.update(1)
     run.info(
         f"Runtime check: {stages['runtime']}",
         event="doctor_check",
@@ -346,7 +346,7 @@ def _doctor(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
         dependency_issues.append(f"Could not run pip check: {error}")
     issues.extend(dependency_issues)
     stages["dependencies"] = "passed" if not dependency_issues else "attention_required"
-    next(progress)
+    progress.update(1)
     run.info(
         f"Dependency check: {stages['dependencies']}",
         event="doctor_check",
@@ -383,7 +383,7 @@ def _doctor(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
             manifest_issues.append(f"Manifest cannot be loaded: {error}")
     issues.extend(manifest_issues)
     stages["manifest"] = "passed" if not manifest_issues else "attention_required"
-    next(progress)
+    progress.update(1)
     run.info(
         f"Manifest check: {stages['manifest']}",
         event="doctor_check",
@@ -436,7 +436,7 @@ def _doctor(args: argparse.Namespace, run: RunLogger) -> dict[str, object]:
         checks["protocol/training_localization_supervised"] = training_localization
         stages["protocol"] = "passed" if not protocol_issues else "attention_required"
     issues.extend(protocol_issues)
-    next(progress)
+    progress.update(1)
     run.info(
         f"Protocol check: {stages['protocol']}",
         event="doctor_check",
