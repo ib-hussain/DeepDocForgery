@@ -31,10 +31,12 @@ from deepdocforgery.data import (
 )
 from deepdocforgery.state import (
     JsonlJournal,
+    ResumeStateError,
     StageLock,
     command_text,
     file_identity,
     fingerprint,
+    load_json_object,
     save_stage_state,
     sha256_file,
 )
@@ -900,14 +902,27 @@ def prepare_midv(
                 "limit": limit,
             }
         )
-        journal = JsonlJournal(
-            records_path=state_root / "midv-dm.records.jsonl",
-            state_path=state_root / "midv-dm.state.json",
-            stage="prepare/midv-dm",
-            contract=contract,
-            total_items=len(image_paths),
-            resume=resume,
-        )
+        try:
+            journal = JsonlJournal(
+                records_path=state_root / "midv-dm.records.jsonl",
+                state_path=state_root / "midv-dm.state.json",
+                stage="prepare/midv-dm",
+                contract=contract,
+                total_items=len(image_paths),
+                resume=resume,
+            )
+        except ResumeStateError as error:
+            previous = load_json_object(state_root / "midv-dm.state.json")
+            previous_total = None if previous is None else previous.get("total_items")
+            if previous_total is not None and previous_total != len(image_paths):
+                raise ResumeStateError(
+                    f"{error} MIDV image count under {image_root} changed from "
+                    f"{previous_total} to {len(image_paths)} since the saved state was "
+                    "written. If new images were added on purpose, rerun with --fresh. "
+                    "Otherwise, check for a stray, partially-written, or duplicate file "
+                    "under that directory (e.g. an interrupted copy/sync) before proceeding."
+                ) from error
+            raise
     records = _journal_records(journal)
     start_position = len(records)
     if run is not None and start_position:

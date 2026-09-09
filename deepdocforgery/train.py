@@ -419,6 +419,10 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     start_epoch = 0
     global_step = 0
     best_metric = float("-inf")
+    consecutive_non_finite_steps = 0
+    max_consecutive_non_finite_steps = int(
+        training.get("max_consecutive_non_finite_grad_steps", 20)
+    )
     if resume_path is not None:
         checkpoint = load_checkpoint(
             resume_path,
@@ -567,9 +571,35 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 gradient_norm = torch.nn.utils.clip_grad_norm_(
                     model.parameters(), float(training.get("gradient_clip_norm", 5.0))
                 )
+                # A non-finite gradient here is expected, normal behaviour while
+                # GradScaler calibrates its loss-scale factor early in training (or
+                # occasionally afterwards) -- that is exactly what scaler.step()/
+                # scaler.update() below are designed to absorb: step() skips the
+                # optimizer update for this batch and update() backs off the scale.
+                # Only a *persistent* run of non-finite gradients indicates a real
+                # divergence problem worth stopping for.
                 if not bool(torch.isfinite(gradient_norm)):
-                    raise RuntimeError(f"Non-finite gradient at epoch {epoch}, batch {batch_index}")
-                final_gradient_norm = float(gradient_norm.detach().cpu())
+                    consecutive_non_finite_steps += 1
+                    run.warning(
+                        f"Non-finite gradient at epoch {epoch}, batch {batch_index} "
+                        f"(scaler backing off scale; {consecutive_non_finite_steps}/"
+                        f"{max_consecutive_non_finite_steps} consecutive)",
+                        event="non_finite_gradient_skipped",
+                        epoch=epoch,
+                        batch=batch_index,
+                        consecutive_non_finite_steps=consecutive_non_finite_steps,
+                        scale=float(scaler.get_scale()),
+                    )
+                    if consecutive_non_finite_steps >= max_consecutive_non_finite_steps:
+                        raise RuntimeError(
+                            f"{consecutive_non_finite_steps} consecutive non-finite gradients "
+                            f"through epoch {epoch}, batch {batch_index}; this is beyond normal "
+                            "AMP loss-scale calibration and likely indicates a real divergence "
+                            "(check learning rate, loss weights, or data)."
+                        )
+                else:
+                    consecutive_non_finite_steps = 0
+                    final_gradient_norm = float(gradient_norm.detach().cpu())
                 scaler.step(optimizer)
                 scaler.update()
                 optimizer.zero_grad(set_to_none=True)

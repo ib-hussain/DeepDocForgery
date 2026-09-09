@@ -44,6 +44,7 @@ output/logs/pytest-cache/
 # Local archives / temporary files / credentials
 archive/
 temp*.*
+temp/
 *.zip
 .git-credentials
 .github/.git-credentials

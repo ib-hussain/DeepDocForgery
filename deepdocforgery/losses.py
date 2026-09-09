@@ -230,7 +230,14 @@ class SynergyMultiTaskLoss(nn.Module):
 
         mask_presence = self._mask_presence(final_probability, valid).clamp(1e-6, 1.0 - 1e-6)
         classification_probability = predictions.image_probability
-        agreement_per_sample = F.binary_cross_entropy(mask_presence, labels, reduction="none")
+        # mask_presence is a probability (post-sigmoid top-k mean), not logits, so
+        # F.binary_cross_entropy would be used here -- but that op is unsafe under
+        # autocast. torch.logit() recovers the pre-sigmoid value (numerically stable
+        # thanks to the clamp above), letting us use the autocast-safe
+        # binary_cross_entropy_with_logits while computing the same loss.
+        agreement_per_sample = F.binary_cross_entropy_with_logits(
+            torch.logit(mask_presence), labels, reduction="none"
+        )
         agreement_per_sample = agreement_per_sample + F.smooth_l1_loss(
             mask_presence, classification_probability, reduction="none"
         )
