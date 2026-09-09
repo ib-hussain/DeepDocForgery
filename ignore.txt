@@ -1,230 +1,627 @@
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ deacr=tivate
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ deacrtivate
-deacrtivate: command not found
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ deactivate
-fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ bash setup/cuda.sh 
-STARTED | CUDA setup | 2026-09-07T08:15:50Z
-Log: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/setup/cuda-20260907T081550Z-1390857.log
-Mon Sep  7 13:15:50 2026       
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 580.173.02             Driver Version: 580.173.02     CUDA Version: 13.0     |
-+-----------------------------------------+------------------------+----------------------+
-| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|                                         |                        |               MIG M. |
-|=========================================+========================+======================|
-|   0  NVIDIA RTX 4000 Ada Gene...    Off |   00000000:01:00.0  On |                  Off |
-| 30%   30C    P8             13W /  130W |     684MiB /  20475MiB |      0%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
-
-+-----------------------------------------------------------------------------------------+
-| Processes:                                                                              |
-|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
-|        ID   ID                                                               Usage      |
-|=========================================================================================|
-|    0   N/A  N/A            2738      G   /usr/lib/xorg/Xorg                      198MiB |
-|    0   N/A  N/A            3113      G   /usr/bin/gnome-shell                    137MiB |
-|    0   N/A  N/A            4379      G   ...exec/xdg-desktop-portal-gnome         27MiB |
-|    0   N/A  N/A            5479      G   /usr/bin/nautilus                        68MiB |
-|    0   N/A  N/A            5602      G   ...rack-uuid=3190708988185955192        112MiB |
-|    0   N/A  N/A            6297      G   ...rack-uuid=3190708988185955192         52MiB |
-+-----------------------------------------------------------------------------------------+
-Clearing legacy or mismatched virtual environment: /home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda
-Requirement already satisfied: pip in ./.venv-cuda/lib/python3.12/site-packages (24.0)
-Collecting pip
-  Using cached pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
-Collecting wheel
-  Using cached wheel-0.48.0-py3-none-any.whl.metadata (2.3 kB)
-Collecting setuptools<82
-  Downloading setuptools-81.0.0-py3-none-any.whl.metadata (6.6 kB)
-Collecting packaging>=24.0 (from wheel)
-  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
-Using cached pip-26.2.1-py3-none-any.whl (1.8 MB)
-Using cached wheel-0.48.0-py3-none-any.whl (33 kB)
-Downloading setuptools-81.0.0-py3-none-any.whl (1.1 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 6.3 MB/s eta 0:00:00
-Using cached packaging-26.3-py3-none-any.whl (129 kB)
-Installing collected packages: setuptools, pip, packaging, wheel
-  Attempting uninstall: pip
-    Found existing installation: pip 24.0
-    Uninstalling pip-24.0:
-      Successfully uninstalled pip-24.0
-ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-launch-ros 0.26.10 requires pyyaml, which is not installed.
-Successfully installed packaging-26.3 pip-26.2.1 setuptools-81.0.0 wheel-0.48.0
-Looking in indexes: https://download.pytorch.org/whl/cu128
-Collecting torch
-  Using cached torch-2.11.0%2Bcu128-cp312-cp312-manylinux_2_28_x86_64.whl.metadata (29 kB)
-Collecting torchvision
-  Using cached torchvision-0.26.0%2Bcu128-cp312-cp312-manylinux_2_28_x86_64.whl.metadata (5.5 kB)
-Collecting filelock (from torch)
-  Using cached filelock-3.32.3-py3-none-any.whl.metadata (2.0 kB)
-Collecting typing-extensions>=4.10.0 (from torch)
-  Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
-Using cached webencodings-0.6.1-py3-none-any.whl (8.7 kB)
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m pip install -e ".[dev,data,exact-jpeg,cuda,download]"
+Obtaining file:///home/fastlab/deepFakeDetection/DeepDocForgery
+  Installing build dependencies ... done
+  Checking if build backend supports build_editable ... done
+  Getting requirements to build editable ... done
+  Preparing editable metadata (pyproject.toml) ... done
+Requirement already satisfied: numpy>=1.26 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (2.5.2)
+Requirement already satisfied: Pillow>=10.0 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (12.3.0)
+Requirement already satisfied: PyYAML>=6.0 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (6.0.3)
+Requirement already satisfied: torch>=2.2 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (2.11.0+cu128)
+Requirement already satisfied: psutil>=5.9 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (7.2.2)
+Requirement already satisfied: tqdm>=4.66 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (4.70.0)
+Requirement already satisfied: jpegio>=0.2.8 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (0.2.8)
+Requirement already satisfied: lmdb>=1.4 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (2.3.0)
+Requirement already satisfied: kaggle>=1.6 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (2.2.4)
+Requirement already satisfied: timm>=1.0 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (1.0.29)
+Requirement already satisfied: pytest>=8.0 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (9.1.1)
+Requirement already satisfied: ruff>=0.6 in ./.venv-cuda/lib/python3.12/site-packages (from deep-doc-forgery==0.5.2) (0.16.6)
+Requirement already satisfied: bleach in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (6.4.0)
+Requirement already satisfied: jupytext in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (1.19.5)
+Requirement already satisfied: kagglesdk<1.0,>=0.1.35 in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (0.1.37)
+Requirement already satisfied: packaging in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (26.3)
+Requirement already satisfied: protobuf in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (7.36.1)
+Requirement already satisfied: python-dateutil in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (2.9.0.post0)
+Requirement already satisfied: python-dotenv in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (1.2.3)
+Requirement already satisfied: python-slugify in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (8.0.4)
+Requirement already satisfied: requests in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (2.34.2)
+Requirement already satisfied: urllib3>=1.15.1 in ./.venv-cuda/lib/python3.12/site-packages (from kaggle>=1.6->deep-doc-forgery==0.5.2) (2.7.0)
+Requirement already satisfied: iniconfig>=1.0.1 in ./.venv-cuda/lib/python3.12/site-packages (from pytest>=8.0->deep-doc-forgery==0.5.2) (2.3.0)
+Requirement already satisfied: pluggy<2,>=1.5 in ./.venv-cuda/lib/python3.12/site-packages (from pytest>=8.0->deep-doc-forgery==0.5.2) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in ./.venv-cuda/lib/python3.12/site-packages (from pytest>=8.0->deep-doc-forgery==0.5.2) (2.21.0)
+Requirement already satisfied: torchvision in ./.venv-cuda/lib/python3.12/site-packages (from timm>=1.0->deep-doc-forgery==0.5.2) (0.26.0+cu128)
+Requirement already satisfied: huggingface_hub in ./.venv-cuda/lib/python3.12/site-packages (from timm>=1.0->deep-doc-forgery==0.5.2) (1.30.0)
+Requirement already satisfied: safetensors in ./.venv-cuda/lib/python3.12/site-packages (from timm>=1.0->deep-doc-forgery==0.5.2) (0.8.0)
+Requirement already satisfied: filelock in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (3.32.3)
+Requirement already satisfied: typing-extensions>=4.10.0 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (4.16.0)
+Requirement already satisfied: setuptools<82 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (81.0.0)
+Requirement already satisfied: sympy>=1.13.3 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (1.14.0)
+Requirement already satisfied: networkx>=2.5.1 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (3.6.1)
+Requirement already satisfied: jinja2 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (3.1.6)
+Requirement already satisfied: fsspec>=0.8.5 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (2026.7.0)
+Requirement already satisfied: cuda-toolkit==12.8.1 in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.1)
+Requirement already satisfied: cuda-bindings<13,>=12.9.4 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (12.9.7)
+Requirement already satisfied: nvidia-cudnn-cu12==9.19.0.56 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (9.19.0.56)
+Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (0.7.1)
+Requirement already satisfied: nvidia-nccl-cu12==2.28.9 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (2.28.9)
+Requirement already satisfied: nvidia-nvshmem-cu12==3.4.5 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (3.4.5)
+Requirement already satisfied: triton==3.6.0 in ./.venv-cuda/lib/python3.12/site-packages (from torch>=2.2->deep-doc-forgery==0.5.2) (3.6.0)
+Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.4.1)
+Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.90)
+Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (11.3.3.83)
+Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (1.13.1.3)
+Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.90)
+Requirement already satisfied: nvidia-curand-cu12==10.3.9.90.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (10.3.9.90)
+Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (11.7.3.90)
+Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.5.8.93)
+Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.93)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.93)
+Requirement already satisfied: nvidia-nvtx-cu12==12.8.90.* in ./.venv-cuda/lib/python3.12/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch>=2.2->deep-doc-forgery==0.5.2) (12.8.90)
+Requirement already satisfied: cuda-pathfinder~=1.1 in ./.venv-cuda/lib/python3.12/site-packages (from cuda-bindings<13,>=12.9.4->torch>=2.2->deep-doc-forgery==0.5.2) (1.6.0)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in ./.venv-cuda/lib/python3.12/site-packages (from sympy>=1.13.3->torch>=2.2->deep-doc-forgery==0.5.2) (1.3.0)
+Requirement already satisfied: webencodings in ./.venv-cuda/lib/python3.12/site-packages (from bleach->kaggle>=1.6->deep-doc-forgery==0.5.2) (0.6.1)
+Requirement already satisfied: click<9.0.0,>=8.4.2 in ./.venv-cuda/lib/python3.12/site-packages (from huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (8.5.0)
+Requirement already satisfied: hf-xet<2.0.0,>=1.5.2 in ./.venv-cuda/lib/python3.12/site-packages (from huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (1.6.0)
+Requirement already satisfied: httpx<1,>=0.23.0 in ./.venv-cuda/lib/python3.12/site-packages (from huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (0.28.1)
+Requirement already satisfied: anyio in ./.venv-cuda/lib/python3.12/site-packages (from httpx<1,>=0.23.0->huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (4.15.1)
+Requirement already satisfied: certifi in ./.venv-cuda/lib/python3.12/site-packages (from httpx<1,>=0.23.0->huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (2026.7.22)
+Requirement already satisfied: httpcore==1.* in ./.venv-cuda/lib/python3.12/site-packages (from httpx<1,>=0.23.0->huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (1.0.9)
+Requirement already satisfied: idna in ./.venv-cuda/lib/python3.12/site-packages (from httpx<1,>=0.23.0->huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (3.19)
+Requirement already satisfied: h11>=0.16 in ./.venv-cuda/lib/python3.12/site-packages (from httpcore==1.*->httpx<1,>=0.23.0->huggingface_hub->timm>=1.0->deep-doc-forgery==0.5.2) (0.16.0)
+Requirement already satisfied: MarkupSafe>=2.0 in ./.venv-cuda/lib/python3.12/site-packages (from jinja2->torch>=2.2->deep-doc-forgery==0.5.2) (3.0.3)
+Requirement already satisfied: markdown-it-py>=1.0 in ./.venv-cuda/lib/python3.12/site-packages (from jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (4.2.0)
+Requirement already satisfied: mdit-py-plugins in ./.venv-cuda/lib/python3.12/site-packages (from jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (0.6.1)
+Requirement already satisfied: nbformat in ./.venv-cuda/lib/python3.12/site-packages (from jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (5.11.1)
+Requirement already satisfied: mdurl~=0.1 in ./.venv-cuda/lib/python3.12/site-packages (from markdown-it-py>=1.0->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (0.1.2)
+Requirement already satisfied: fastjsonschema>=2.15 in ./.venv-cuda/lib/python3.12/site-packages (from nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (2.22.2)
+Requirement already satisfied: jsonschema>=2.6 in ./.venv-cuda/lib/python3.12/site-packages (from nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (4.26.0)
+Requirement already satisfied: jupyter-core!=5.0.*,>=4.12 in ./.venv-cuda/lib/python3.12/site-packages (from nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (5.9.1)
+Requirement already satisfied: traitlets>=5.1 in ./.venv-cuda/lib/python3.12/site-packages (from nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (5.16.1)
+Requirement already satisfied: attrs>=22.2.0 in ./.venv-cuda/lib/python3.12/site-packages (from jsonschema>=2.6->nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (26.1.0)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in ./.venv-cuda/lib/python3.12/site-packages (from jsonschema>=2.6->nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (2025.9.1)
+Requirement already satisfied: referencing>=0.28.4 in ./.venv-cuda/lib/python3.12/site-packages (from jsonschema>=2.6->nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (0.37.0)
+Requirement already satisfied: rpds-py>=0.25.0 in ./.venv-cuda/lib/python3.12/site-packages (from jsonschema>=2.6->nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (2026.6.3)
+Requirement already satisfied: platformdirs>=2.5 in ./.venv-cuda/lib/python3.12/site-packages (from jupyter-core!=5.0.*,>=4.12->nbformat->jupytext->kaggle>=1.6->deep-doc-forgery==0.5.2) (4.11.7)
+Requirement already satisfied: six>=1.5 in ./.venv-cuda/lib/python3.12/site-packages (from python-dateutil->kaggle>=1.6->deep-doc-forgery==0.5.2) (1.17.0)
+Requirement already satisfied: text-unidecode>=1.3 in ./.venv-cuda/lib/python3.12/site-packages (from python-slugify->kaggle>=1.6->deep-doc-forgery==0.5.2) (1.3)
+Requirement already satisfied: charset_normalizer<4,>=2 in ./.venv-cuda/lib/python3.12/site-packages (from requests->kaggle>=1.6->deep-doc-forgery==0.5.2) (3.5.1)
 Building wheels for collected packages: deep-doc-forgery
-  Building editable for deep-doc-forgery (pyproject.toml): started
-  Building editable for deep-doc-forgery (pyproject.toml): finished with status 'done'
-  Created wheel for deep-doc-forgery: filename=deep_doc_forgery-0.5.0-0.editable-py3-none-any.whl size=20416 sha256=913c586d7b34397d95106c4e15437e1ca3b4e08e8a8dde44ed0e483fee2dfecd
-  Stored in directory: /tmp/pip-ephem-wheel-cache-8rvcljop/wheels/e4/58/8c/ddc42097ca4d3b46371362f5b7e2ee3d209cc10c2bfc5d957a
+  Building editable for deep-doc-forgery (pyproject.toml) ... done
+  Created wheel for deep-doc-forgery: filename=deep_doc_forgery-0.5.2-0.editable-py3-none-any.whl size=21481 sha256=9860e682183954c4781cf98341ed08d4cb20f757f87a5c0303b0bf3d5bbb2b9f
+  Stored in directory: /tmp/pip-ephem-wheel-cache-m487w501/wheels/e4/58/8c/ddc42097ca4d3b46371362f5b7e2ee3d209cc10c2bfc5d957a
 Successfully built deep-doc-forgery
-Installing collected packages: text-unidecode, jpegio, webencodings, urllib3, traitlets, tqdm, six, safetensors, ruff, rpds-py, PyYAML, python-slugify, python-dotenv, pygments, psutil, protobuf, pluggy, platformdirs, mdurl, lmdb, iniconfig, idna, hf-xet, h11, fastjsonschema, click, charset_normalizer, certifi, attrs, requests, referencing, python-dateutil, pytest, markdown-it-py, jupyter-core, httpcore, bleach, anyio, mdit-py-plugins, kagglesdk, jsonschema-specifications, httpx, jsonschema, huggingface_hub, nbformat, deep-doc-forgery, timm, jupytext, kaggle
+Installing collected packages: deep-doc-forgery
+  Attempting uninstall: deep-doc-forgery
+    Found existing installation: deep-doc-forgery 0.5.1
+    Uninstalling deep-doc-forgery-0.5.1:
+      Successfully uninstalled deep-doc-forgery-0.5.1
+Successfully installed deep-doc-forgery-0.5.2
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m pytest -q
+INTERNALERROR> Traceback (most recent call last):
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/main.py", line 330, in wrap_session
+INTERNALERROR>     session.exitstatus = doit(config, session) or 0
+INTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/main.py", line 383, in _main
+INTERNALERROR>     config.hook.pytest_collection(session=session)
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+INTERNALERROR>     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+INTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+INTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+INTERNALERROR>     raise exception
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/logging.py", line 803, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/warnings.py", line 99, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+INTERNALERROR>     teardown.throw(exception)
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1445, in pytest_collection
+INTERNALERROR>     return (yield)
+INTERNALERROR>             ^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+INTERNALERROR>     res = hook_impl.function(*args)
+INTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/main.py", line 394, in pytest_collection
+INTERNALERROR>     session.perform_collect()
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/main.py", line 871, in perform_collect
+INTERNALERROR>     self.config.pluginmanager.check_pending()
+INTERNALERROR>   File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_manager.py", line 387, in check_pending
+INTERNALERROR>     raise PluginValidationError(
+INTERNALERROR> pluggy._manager.PluginValidationError: unknown hook 'pytest_launch_collect_makemodule' in plugin <module 'launch_testing_ros_pytest_entrypoint' from '/opt/ros/jazzy/lib/python3.12/site-packages/launch_testing_ros_pytest_entrypoint.py'>
 
-Successfully installed PyYAML-6.0.3 anyio-4.15.1 attrs-26.1.0 bleach-6.4.0 certifi-2026.7.22 charset_normalizer-3.5.1 click-8.5.0 deep-doc-forgery-0.5.0 fastjsonschema-2.22.2 h11-0.16.0 hf-xet-1.6.0 httpcore-1.0.9 httpx-0.28.1 huggingface_hub-1.30.0 idna-3.19 iniconfig-2.3.0 jpegio-0.2.8 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 jupyter-core-5.9.1 jupytext-1.19.5 kaggle-2.2.4 kagglesdk-0.1.37 lmdb-2.3.0 markdown-it-py-4.2.0 mdit-py-plugins-0.6.1 mdurl-0.1.2 nbformat-5.11.1 platformdirs-4.11.7 pluggy-1.6.0 protobuf-7.36.1 psutil-7.2.2 pygments-2.21.0 pytest-9.1.1 python-dateutil-2.9.0.post0 python-dotenv-1.2.3 python-slugify-8.0.4 referencing-0.37.0 requests-2.34.2 rpds-py-2026.6.3 ruff-0.16.6 safetensors-0.8.0 six-1.17.0 text-unidecode-1.3 timm-1.0.29 tqdm-4.70.0 traitlets-5.16.1 urllib3-2.7.0 webencodings-0.6.1
-No broken requirements found.
-Traceback (most recent call last):
+no tests ran in 22.29s
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery prepare --profile cuda && python -m deepdocforgery doctor --profile cuda
+08:38:08 | INFO    | STARTED
+08:38:08 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log
+08:38:08 | INFO    | Prepare profile=cuda | CPU threads=28 | preparation workers=20
+08:38:08 | INFO    | CPU 24% | RAM 5.0/31.0G | RSS 0.5G
+08:38:10 | INFO    | doctamper-training: reused 120000/120000 prepared records
+08:38:10 | INFO    | doctamper-training: 120000 records prepared
+08:38:11 | INFO    | doctamper-testing: reused 30000/30000 prepared records
+08:38:11 | INFO    | doctamper-testing: 30000 records prepared
+08:38:11 | INFO    | doctamper-fcd: reused 2000/2000 prepared records
+08:38:11 | INFO    | doctamper-fcd: 2000 records prepared
+08:38:11 | INFO    | doctamper-scd: reused 18000/18000 prepared records
+08:38:12 | INFO    | doctamper-scd: 18000 records prepared
+08:38:12 | INFO    | Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images
+08:38:12 | INFO    | MIDV scan found 8999 images
+08:38:20 | INFO    | midv-dm: resuming after 8999/8999 records
+Prepare midv-dm: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8999/8999 [00:00<?, ?image/s]
+08:38:20 | INFO    | MIDV: 8999 records prepared | scale-aligned masks=0
+08:38:20 | INFO    | Validating split and leakage protocol
+08:38:20 | WARNING | DocTamper masked-perceptual proxy collisions cross the immutable official benchmark boundary (8835 groups). These are diagnostic only: official TestingSet/FCD/SCD membership takes precedence over the non-authoritative proxy hash.
+08:38:22 | INFO    | Manifest ready: 178999 samples | train=108382 val=19105 test=51512
+08:38:22 | INFO    | SUCCEEDED | CPU 5% | RAM 5.4/31.0G | RSS 0.8G
+{
+  "adn_supervision": {
+    "proxy": 178999
+  },
+  "benchmarks": {
+    "doctamper-fcd": 2000,
+    "doctamper-scd": 18000,
+    "doctamper-testing": 30000,
+    "doctamper-training": 120000,
+    "midv-dm": 8999
+  },
+  "classification_supervised": 8999,
+  "compute": {
+    "logical_cpus": 28,
+    "physical_cpus": 20,
+    "thread_environment": {
+      "BLIS_NUM_THREADS": "28",
+      "MKL_NUM_THREADS": "28",
+      "NUMEXPR_NUM_THREADS": "28",
+      "OMP_NUM_THREADS": "28",
+      "OPENBLAS_NUM_THREADS": "28",
+      "VECLIB_MAXIMUM_THREADS": "28"
+    },
+    "torch_interop_threads": 4,
+    "torch_threads": 28
+  },
+  "datasets": {
+    "doctamper": 170000,
+    "midv": 8999
+  },
+  "degradation_supervised": 0,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.jsonl",
+  "exif_transposed_images": 499,
+  "groups": 125986,
+  "labels": {
+    "test": {
+      "0": 168,
+      "1": 51344
+    },
+    "train": {
+      "0": 691,
+      "1": 107691
+    },
+    "val": {
+      "0": 140,
+      "1": 18965
+    }
+  },
+  "localization_supervised": 178999,
+  "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+  "profile": "cuda",
+  "protocol": {
+    "doctamper_classification": "disabled (positive-only release)",
+    "doctamper_grouping": "masked perceptual proxy for TrainingSet train/validation grouping; official test boundaries take precedence over proxy collisions",
+    "doctamper_proxy_cross_benchmark_collisions": {
+      "count": 8835,
+      "preview": [
+        {
+          "benchmarks": [
+            "doctamper-scd",
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000000ffffffff"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-000000017fffffff"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000001ffffffdf"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000001fffffffe"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000002efffffff"
+        }
+      ]
+    },
+    "doctamper_testing_fcd_scd": "test only",
+    "doctamper_training": "train/validation only",
+    "midv": "source-group-disjoint train/validation/test"
+  },
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 84.1,
+      "system_percent": 5.1
+    },
+    "ram": {
+      "process_rss_gib": 0.838,
+      "system_available_gib": 25.617,
+      "system_percent": 17.4,
+      "system_total_gib": 31.029,
+      "system_used_gib": 5.412
+    }
+  },
+  "resume_state": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/state.json",
+  "samples": 178999,
+  "scale_aligned_masks": 0,
+  "sha256": "e2c70c522a7c76d6c255f801a27205af43c4b81232a89f2f6dbc9038bba206ea",
+  "splits": {
+    "test": 51512,
+    "train": 108382,
+    "val": 19105
+  },
+  "status": "ok",
+  "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log",
+  "workers": 20
+}
+08:38:24 | INFO    | STARTED
+08:38:24 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T033824Z-8213-cf5d2c.log
+08:38:24 | INFO    | Doctor profile=cuda | config=configs/cuda/full.yaml | CPU threads=28
+08:38:24 | INFO    | CPU 17% | RAM 5.2/31.0G | RSS 0.6G | VRAM 0.5/19.5G | GPU 9% | temp 30C | alloc/reserved/peak 0.0/0.0/0.0G
+08:38:24 | ERROR   | FAILED: 'tqdm_asyncio' object is not an iterator                                                                                                                          
+08:38:24 | ERROR   | FAILED | CPU 17% | RAM 5.2/31.0G | RSS 0.6G | VRAM 0.5/19.5G | GPU 9% | temp 30C | alloc/reserved/peak 0.0/0.0/0.0G                                                       
+Doctor cuda:   0%|                                                                                                                                                    | 0/4 [00:00<?, ?check/s]Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pytest/__main__.py", line 9, in <module>
-    raise SystemExit(_console_main())
-                     ^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 253, in _console_main
-    code = _main(prog=_get_prog_name(sys.argv))
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 223, in _main
-    config = _prepareconfig(new_args, plugins, prog=prog)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 410, in _prepareconfig
-    config: Config = pluginmanager.hook.pytest_cmdline_parse(
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
-    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
-    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
-    raise exception
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
-    teardown.throw(exception)
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/helpconfig.py", line 124, in pytest_cmdline_parse
-    config = yield
-             ^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
-    res = hook_impl.function(*args)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1232, in pytest_cmdline_parse
-    self.parse(args)
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1583, in parse
-    self.pluginmanager.load_setuptools_entrypoints("pytest11")
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/pluggy/_manager.py", line 416, in load_setuptools_entrypoints
-    plugin = ep.load()
-             ^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
-    module = import_module(match.group('module'))
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch_testing/__init__.py", line 15, in <module>
-    from . import tools
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch_testing/tools/__init__.py", line 18, in <module>
-    from .process import launch_process
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch_testing/tools/process.py", line 17, in <module>
-    import launch
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/__init__.py", line 17, in <module>
-    from . import actions
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/actions/__init__.py", line 17, in <module>
-    from .declare_launch_argument import DeclareLaunchArgument
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/actions/declare_launch_argument.py", line 24, in <module>
-    from ..frontend import Entity
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/frontend/__init__.py", line 20, in <module>
-    from .parser import InvalidFrontendLaunchFileError, Parser
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/frontend/parser.py", line 35, in <module>
-    from .parse_substitution import parse_if_substitutions
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/launch/frontend/parse_substitution.py", line 23, in <module>
-    from lark import Lark
-ModuleNotFoundError: No module named 'lark'
-FAILED | CUDA setup | exit=1 | 2026-09-07T08:20:31Z
-fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
-fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ source .venv-cuda/bin/activate
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery prepare --profile cuda
-13:21:40 | INFO    | STARTED
-13:21:40 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260907T082140Z-1393563-f84369.log
-13:21:40 | INFO    | Prepare profile=cuda | CPU threads=28 | MIDV workers=20
-13:21:40 | INFO    | CPU 54% | RAM 6.0/31.0G | RSS 0.5G
-13:21:49 | INFO    | doctamper-training: 1000/120000 images | CPU 3% | RAM 5.9/31.0G | RSS 0.6G                                                                                                
-13:21:58 | INFO    | doctamper-training: 2000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 0.8G                                                                                                
-13:22:06 | INFO    | doctamper-training: 3000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 0.9G                                                                                                
-13:22:15 | INFO    | doctamper-training: 4000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 1.0G                                                                                                
-13:22:23 | INFO    | doctamper-training: 5000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 1.1G                                                                                                
-13:22:32 | INFO    | doctamper-training: 6000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 1.3G                                                                                                
-13:22:40 | INFO    | doctamper-training: 7000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 1.4G                                                                                                
-13:22:49 | INFO    | doctamper-training: 8000/120000 images | CPU 2% | RAM 5.9/31.0G | RSS 1.5G                                                                                                
-13:22:56 | INFO    | doctamper-training: 9000/120000 images | CPU 2% | RAM 6.0/31.0G | RSS 1.7G                                                                                                
-13:38:18 | INFO    | doctamper-training: 120000/120000 images | CPU 2% | RAM 6.1/31.0G | RSS 1.2G                                                                                              
-Prepare doctamper-training: 100%|███████████████████████████████████████████████████████████████████████████████| 120000/120000 [16:38<00:00, 120.23image/s, CPU 2% | RAM 6.1/31.0G | RSS 1.2G]
-13:38:18 | INFO    | doctamper-training: 120000 records prepared
-13:38:27 | INFO    | doctamper-testing: 1000/30000 images | CPU 3% | RAM 6.2/31.0G | RSS 0.7G                                                                                                  
-13:38:35 | INFO    | doctamper-testing: 2000/30000 images | CPU 2% | RAM 6.1/31.0G | RSS 0.9G                                                                                                
-13:42:19 | INFO    | doctamper-testing: 30000/30000 images | CPU 2% | RAM 6.0/31.0G | RSS 2.2G                                                                                                 
-Prepare doctamper-testing: 100%|██████████████████████████████████████████████████████████████████████████████████| 30000/30000 [04:00<00:00, 124.76image/s, CPU 2% | RAM 6.0/31.0G | RSS 2.2G]
-13:42:19 | INFO    | doctamper-testing: 30000 records prepared
-13:42:29 | INFO    | doctamper-fcd: 1000/2000 images | CPU 2% | RAM 6.0/31.0G | RSS 0.6G                                                                                                       
-13:42:39 | INFO    | doctamper-fcd: 2000/2000 images | CPU 2% | RAM 6.0/31.0G | RSS 0.9G                                                                                                       
-Prepare doctamper-fcd: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:20<00:00, 97.21image/s, CPU 2% | RAM 6.0/31.0G | RSS 0.9G]
-13:42:39 | INFO    | doctamper-fcd: 2000 records prepared
-13:42:47 | INFO    | doctamper-scd: 1000/18000 images | CPU 2% | RAM 6.0/31.0G | RSS 0.5G                                                                                                    
-13:44:47 | INFO    | doctamper-scd: 17000/18000 images | CPU 2% | RAM 6.0/31.0G | RSS 2.3G                                                                                                     
-13:44:55 | INFO    | doctamper-scd: 18000/18000 images | CPU 2% | RAM 6.0/31.0G | RSS 2.4G                                                                                                     
-Prepare doctamper-scd: 100%|██████████████████████████████████████████████████████████████████████████████████████| 18000/18000 [02:15<00:00, 132.82image/s, CPU 2% | RAM 6.0/31.0G | RSS 2.4G]
-13:44:55 | INFO    | doctamper-scd: 18000 records prepared
-13:44:55 | INFO    | Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images
-13:44:56 | INFO    | MIDV scan found 8999 images
-Prepare midv-dm:   0%|▏                                                                                                                                   | 10/8999 [00:00<11:41, 12.81image/s]
-13:44:57 | ERROR   | FAILED: Image/mask aspect-ratio mismatch: /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images/authentic/alb_id/11.jpg (4032, 2268) vs /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/masks/authentic/alb_id/11.png (2268, 4032)
-13:44:57 | ERROR   | FAILED | CPU 6% | RAM 6.0/31.0G | RSS 0.4G
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 41, in <module>
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 54, in <module>
     main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 37, in main
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 33, in main
     module.main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 747, in main
-    result = _prepare(args, run)
-             ^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 669, in _prepare
-    prepare_midv(
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 581, in prepare_midv
-    for position, record in enumerate(tracked, start=1):
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/tqdm/std.py", line 1187, in __iter__
-    for obj in iterable:
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 528, in _bounded_midv_records
-    yield from executor.map(
-  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
-    yield _result_or_cancel(fs.pop())
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
-    return fut.result(timeout)
-           ^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
-    return self.__get_result()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
-    raise self._exception
-  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
-    result = self.fn(*self.args, **self.kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 529, in <lambda>
-    lambda path: _prepare_midv_record(root, image_root, mask_root, path),
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 483, in _prepare_midv_record
-    raise ValueError(
-ValueError: Image/mask aspect-ratio mismatch: /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images/authentic/alb_id/11.jpg (4032, 2268) vs /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/masks/authentic/alb_id/11.png (2268, 4032)
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/doctor.py", line 486, in main
+    result = _doctor(args, run)
+             ^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/doctor.py", line 308, in _doctor
+    next(progress)
+TypeError: 'tqdm_asyncio' object is not an iterator
+Doctor cuda:   0%|                                                                                                                                                    | 0/4 [00:00<?, ?check/s]
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery status
+08:38:44 | INFO    | STARTED
+08:38:44 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T033844Z-8357-09ed3a.log
+08:38:45 | INFO    | Status: 8 states, 0 training runs, 1 recovery commands
+08:38:45 | ERROR   | ATTENTION_REQUIRED | CPU 5% | RAM 5.0/31.0G | RSS 0.5G
+{
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T033844Z-8357-09ed3a.jsonl",
+  "message": "Pipeline states loaded",
+  "operations": {
+    "doctor": {
+      "command": "doctor",
+      "duration_seconds": 0.497,
+      "error": "'tqdm_asyncio' object is not an iterator",
+      "error_type": "TypeError",
+      "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T033824Z-8213-cf5d2c.jsonl",
+      "finished_at": "2026-09-09T03:38:24+00:00",
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 423.4,
+          "system_percent": 17.0
+        },
+        "cuda": {
+          "allocated_gib": 0.0,
+          "device": 0,
+          "device_free_gib": 19.047,
+          "device_total_gib": 19.54,
+          "device_used_gib": 0.493,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 8213,
+                "used_vram_gib": 0.156
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 19.047,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 0.493,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 15.64,
+            "power_limit_w": 130.0,
+            "temperature_c": 30.0,
+            "utilization_percent": 9.0
+          },
+          "peak_allocated_gib": 0.0,
+          "reserved_gib": 0.0
+        },
+        "ram": {
+          "process_rss_gib": 0.602,
+          "system_available_gib": 25.803,
+          "system_percent": 16.8,
+          "system_total_gib": 31.029,
+          "system_used_gib": 5.225
+        }
+      },
+      "run_id": "20260909T033824Z-8213-cf5d2c",
+      "started_at": "2026-09-09T03:38:24+00:00",
+      "status": "failed",
+      "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T033824Z-8213-cf5d2c.log"
+    },
+    "prepare": {
+      "command": "prepare",
+      "duration_seconds": 14.468,
+      "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.jsonl",
+      "finished_at": "2026-09-09T03:38:22+00:00",
+      "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+      "profile": "cuda",
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 84.1,
+          "system_percent": 5.1
+        },
+        "ram": {
+          "process_rss_gib": 0.838,
+          "system_available_gib": 25.617,
+          "system_percent": 17.4,
+          "system_total_gib": 31.029,
+          "system_used_gib": 5.412
+        }
+      },
+      "run_id": "20260909T033808Z-8094-6188db",
+      "samples": 178999,
+      "started_at": "2026-09-09T03:38:08+00:00",
+      "status": "succeeded",
+      "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+      "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log"
+    }
+  },
+  "output_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/output",
+  "recovery_commands": [
+    {
+      "command": "python -m deepdocforgery doctor --profile cuda --log-dir output/logs",
+      "progress": {
+        "completed_stages": []
+      },
+      "stage": "doctor",
+      "state": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/doctor/cuda.json",
+      "status": "failed"
+    }
+  ],
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 71.0,
+      "system_percent": 4.6
+    },
+    "ram": {
+      "process_rss_gib": 0.488,
+      "system_available_gib": 26.03,
+      "system_percent": 16.1,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.999
+    }
+  },
+  "stage_states": {
+    "state/doctor/cuda.json": {
+      "error": "'tqdm_asyncio' object is not an iterator",
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/doctor/cuda.json",
+      "progress": {
+        "completed_stages": []
+      },
+      "relative_path": "state/doctor/cuda.json",
+      "report": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor-cuda.json",
+      "resume_command": "python -m deepdocforgery doctor --profile cuda --log-dir output/logs",
+      "stage": "doctor",
+      "status": "failed",
+      "updated_at": "2026-09-09T03:38:24+00:00"
+    },
+    "state/prepare/cuda/doctamper-fcd.state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-fcd.state.json",
+      "progress": {
+        "completed": 2000,
+        "percent": 100.0,
+        "total": 2000
+      },
+      "relative_path": "state/prepare/cuda/doctamper-fcd.state.json",
+      "report": null,
+      "resume_command": null,
+      "stage": "prepare/doctamper-fcd",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:11+00:00"
+    },
+    "state/prepare/cuda/doctamper-scd.state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-scd.state.json",
+      "progress": {
+        "completed": 18000,
+        "percent": 100.0,
+        "total": 18000
+      },
+      "relative_path": "state/prepare/cuda/doctamper-scd.state.json",
+      "report": null,
+      "resume_command": null,
+      "stage": "prepare/doctamper-scd",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:12+00:00"
+    },
+    "state/prepare/cuda/doctamper-testing.state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-testing.state.json",
+      "progress": {
+        "completed": 30000,
+        "percent": 100.0,
+        "total": 30000
+      },
+      "relative_path": "state/prepare/cuda/doctamper-testing.state.json",
+      "report": null,
+      "resume_command": null,
+      "stage": "prepare/doctamper-testing",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:11+00:00"
+    },
+    "state/prepare/cuda/doctamper-training.state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-training.state.json",
+      "progress": {
+        "completed": 120000,
+        "percent": 100.0,
+        "total": 120000
+      },
+      "relative_path": "state/prepare/cuda/doctamper-training.state.json",
+      "report": null,
+      "resume_command": null,
+      "stage": "prepare/doctamper-training",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:10+00:00"
+    },
+    "state/prepare/cuda/midv-dm.state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/midv-dm.state.json",
+      "progress": {
+        "completed": 8999,
+        "percent": 100.0,
+        "total": 8999
+      },
+      "relative_path": "state/prepare/cuda/midv-dm.state.json",
+      "report": null,
+      "resume_command": null,
+      "stage": "prepare/midv-dm",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:20+00:00"
+    },
+    "state/prepare/cuda/state.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/state.json",
+      "progress": null,
+      "relative_path": "state/prepare/cuda/state.json",
+      "report": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+      "resume_command": "python -m deepdocforgery prepare --profile cuda --seed 7 --validation-fraction 0.15 --midv-test-fraction 0.15 --workers auto --checkpoint-interval 1000 --log-dir output/logs",
+      "stage": "prepare/cuda",
+      "status": "completed",
+      "updated_at": "2026-09-09T03:38:22+00:00"
+    },
+    "state/setup/cuda.json": {
+      "error": null,
+      "path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/setup/cuda.json",
+      "progress": {
+        "completed_step": "completed"
+      },
+      "relative_path": "state/setup/cuda.json",
+      "report": null,
+      "resume_command": "bash setup/cuda.sh",
+      "stage": "setup/cuda",
+      "status": "completed",
+      "updated_at": "2026-09-08T10:36:19+00:00"
+    }
+  },
+  "status": "attention_required",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T033844Z-8357-09ed3a.log",
+  "training_runs": {}
+}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ cat /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T033844Z-8357-09ed3a.log
+08:38:44 | INFO    | STARTED
+08:38:44 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T033844Z-8357-09ed3a.log
+08:38:45 | INFO    | Status: 8 states, 0 training runs, 1 recovery commands
+08:38:45 | ERROR   | ATTENTION_REQUIRED | CPU 5% | RAM 5.0/31.0G | RSS 0.5G
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ cat output/logs/prepare/20260909T033808Z-8094-6188db.jsonl
+{"command": "prepare", "cwd": "/home/fastlab/deepFakeDetection/DeepDocForgery", "event": "run_started", "level": "info", "message": "STARTED", "pid": 8094, "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 0.0, "system_percent": 0.0}, "ram": {"process_rss_gib": 0.491, "system_available_gib": 26.063, "system_percent": 16.0, "system_total_gib": 31.029, "system_used_gib": 4.966}}, "run_id": "20260909T033808Z-8094-6188db", "runtime": {"platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.39", "python": "3.12.3", "torch": "2.11.0+cu128", "torch_cuda":"12.8"}, "timestamp": "2026-09-09T03:38:08+00:00"}
+{"command": "prepare", "event": "log_paths", "jsonl": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.jsonl", "level": "info", "message": "Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:08+00:00"}
+{"command": "prepare", "compute": {"logical_cpus": 28, "physical_cpus": 20, "thread_environment": {"BLIS_NUM_THREADS": "28", "MKL_NUM_THREADS": "28", "NUMEXPR_NUM_THREADS": "28", "OMP_NUM_THREADS": "28", "OPENBLAS_NUM_THREADS": "28", "VECLIB_MAXIMUM_THREADS": "28"}, "torch_interop_threads": 4, "torch_threads": 28}, "doctamper_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-doctamper", "event": "prepare_started", "level": "info", "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl", "message": "Prepare profile=cuda| CPU threads=28 | preparation workers=20", "midv_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv", "prepared_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper", "profile": "cuda", "resume": true, "run_id": "20260909T033808Z-8094-6188db", "state_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda", "timestamp": "2026-09-09T03:38:08+00:00", "workers": 20}
+{"command": "prepare", "event": "resources_initial", "level": "info", "message": "CPU 24% | RAM 5.0/31.0G | RSS 0.5G", "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 632.8, "system_percent": 24.3}, "ram": {"process_rss_gib": 0.491, "system_available_gib": 26.062, "system_percent": 16.0, "system_total_gib": 31.029, "system_used_gib": 4.967}}, "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:08+00:00"}
+{"benchmark": "doctamper-training", "command": "prepare", "completed": 120000, "event": "prepare_subset_resumed", "level": "info", "message": "doctamper-training: reused 120000/120000 prepared records", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:10+00:00", "total": 120000}
+{"benchmark": "doctamper-training", "command": "prepare", "dataset": "doctamper", "event": "dataset_subset_prepared", "level": "info", "message": "doctamper-training: 120000 records prepared", "records": 120000, "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 70.4, "system_percent": 3.4}, "ram": {"process_rss_gib": 0.837, "system_available_gib": 25.621, "system_percent": 17.4, "system_total_gib": 31.029, "system_used_gib": 5.408}}, "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:10+00:00"}
+{"benchmark": "doctamper-testing", "command": "prepare", "completed": 30000, "event": "prepare_subset_resumed", "level": "info", "message": "doctamper-testing: reused 30000/30000 prepared records", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:11+00:00", "total": 30000}
+{"benchmark": "doctamper-testing", "command": "prepare", "dataset": "doctamper", "event": "dataset_subset_prepared", "level": "info", "message": "doctamper-testing: 30000 records prepared", "records": 30000, "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 43.7, "system_percent": 3.8}, "ram": {"process_rss_gib": 0.837, "system_available_gib": 25.617, "system_percent": 17.4, "system_total_gib": 31.029, "system_used_gib": 5.412}}, "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:11+00:00"}
+{"benchmark": "doctamper-fcd", "command": "prepare", "completed": 2000, "event": "prepare_subset_resumed", "level": "info", "message": "doctamper-fcd: reused 2000/2000 prepared records", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:11+00:00", "total": 2000}
+{"benchmark": "doctamper-fcd", "command": "prepare", "dataset": "doctamper", "event": "dataset_subset_prepared", "level": "info", "message": "doctamper-fcd: 2000 records prepared", "records":2000, "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 23.0, "system_percent": 2.5}, "ram": {"process_rss_gib": 0.837, "system_available_gib": 25.618, "system_percent":17.4, "system_total_gib": 31.029, "system_used_gib": 5.411}}, "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:11+00:00"}
+{"benchmark": "doctamper-scd", "command": "prepare", "completed": 18000, "event": "prepare_subset_resumed", "level": "info", "message": "doctamper-scd: reused 18000/18000 prepared records", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:11+00:00", "total": 18000}
+{"benchmark": "doctamper-scd", "command": "prepare", "dataset": "doctamper", "event": "dataset_subset_prepared", "level": "info", "message": "doctamper-scd: 18000 records prepared", "records": 18000, "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 45.8, "system_percent": 2.3}, "ram": {"process_rss_gib": 0.837, "system_available_gib": 25.627, "system_percent": 17.4, "system_total_gib": 31.029, "system_used_gib": 5.402}}, "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:12+00:00"}
+{"command": "prepare", "dataset": "midv", "event": "dataset_scan_started", "image_root": "/home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images", "level": "info", "message":"Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:12+00:00"}
+{"command": "prepare", "dataset": "midv", "event": "dataset_scan_completed", "images": 8999, "level": "info", "message": "MIDV scan found 8999 images", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:12+00:00"}
+{"benchmark": "midv-dm", "command": "prepare", "completed": 8999, "event": "prepare_subset_resumed", "level": "info", "message": "midv-dm: resuming after 8999/8999 records", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:20+00:00", "total": 8999}
+{"command": "prepare", "dataset": "midv", "event": "dataset_prepared", "level": "info", "message": "MIDV: 8999 records prepared | scale-aligned masks=0", "records": 8999, "resources": {"cpu":{"logical": 28, "physical": 20, "process_percent": 47.0, "system_percent": 3.4}, "ram": {"process_rss_gib": 0.837, "system_available_gib": 25.668, "system_percent": 17.3, "system_total_gib": 31.029, "system_used_gib": 5.361}}, "run_id": "20260909T033808Z-8094-6188db", "scale_aligned_masks": 0, "timestamp": "2026-09-09T03:38:20+00:00"}
+{"command": "prepare", "event": "protocol_validation_started", "level": "info", "message": "Validating split and leakage protocol", "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:20+00:00"}
+{"collisions": 8835, "command": "prepare", "event": "doctamper_proxy_cross_benchmark_collision", "level": "warning", "message": "DocTamper masked-perceptual proxy collisions cross the immutable official benchmark boundary (8835 groups). These are diagnostic only: official TestingSet/FCD/SCD membership takes precedence over the non-authoritative proxy hash.", "preview": [{"benchmarks": ["doctamper-scd", "doctamper-testing", "doctamper-training"], "source_group": "doctamper:masked-ahash-00000000ffffffff"}, {"benchmarks": ["doctamper-testing", "doctamper-training"], "source_group": "doctamper:masked-ahash-000000017fffffff"}, {"benchmarks": ["doctamper-testing", "doctamper-training"], "source_group": "doctamper:masked-ahash-00000001ffffffdf"}, {"benchmarks": ["doctamper-testing", "doctamper-training"], "source_group": "doctamper:masked-ahash-00000001fffffffe"}, {"benchmarks": ["doctamper-testing", "doctamper-training"], "source_group": "doctamper:masked-ahash-00000002efffffff"}], "run_id": "20260909T033808Z-8094-6188db", "timestamp": "2026-09-09T03:38:20+00:00"}
+{"command": "prepare", "event": "prepare_completed", "level": "info", "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl", "message": "Manifest ready: 178999 samples | train=108382 val=19105 test=51512", "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 84.1, "system_percent": 5.1}, "ram": {"process_rss_gib": 0.838, "system_available_gib": 25.617, "system_percent": 17.4, "system_total_gib": 31.029, "system_used_gib": 5.412}}, "run_id": "20260909T033808Z-8094-6188db", "samples": 178999, "sha256": "e2c70c522a7c76d6c255f801a27205af43c4b81232a89f2f6dbc9038bba206ea", "splits": {"test": 51512, "train": 108382, "val": 19105}, "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json", "timestamp": "2026-09-09T03:38:22+00:00"}
+{"command": "prepare", "event": "run_finished", "level": "info", "message": "SUCCEEDED | CPU 5% | RAM 5.4/31.0G | RSS 0.8G", "run_id": "20260909T033808Z-8094-6188db", "summary": {"command": "prepare", "duration_seconds": 14.468, "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.jsonl", "finished_at": "2026-09-09T03:38:22+00:00", "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl", "profile": "cuda", "resources": {"cpu": {"logical": 28, "physical": 20, "process_percent": 84.1, "system_percent": 5.1}, "ram": {"process_rss_gib": 0.838, "system_available_gib": 25.617, "system_percent": 17.4, "system_total_gib": 31.029, "system_used_gib": 5.412}}, "run_id": "20260909T033808Z-8094-6188db", "samples": 178999, "started_at": "2026-09-09T03:38:08+00:00", "status": "succeeded", "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json", "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log"}, "timestamp": "2026-09-09T03:38:22+00:00"}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ cat output/logs/prepare/20260909T033808Z-8094-6188db.log
+08:38:08 | INFO    | STARTED
+08:38:08 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log
+08:38:08 | INFO    | Prepare profile=cuda | CPU threads=28 | preparation workers=20
+08:38:08 | INFO    | CPU 24% | RAM 5.0/31.0G | RSS 0.5G
+08:38:10 | INFO    | doctamper-training: reused 120000/120000 prepared records
+08:38:10 | INFO    | doctamper-training: 120000 records prepared
+08:38:11 | INFO    | doctamper-testing: reused 30000/30000 prepared records
+08:38:11 | INFO    | doctamper-testing: 30000 records prepared
+08:38:11 | INFO    | doctamper-fcd: reused 2000/2000 prepared records
+08:38:11 | INFO    | doctamper-fcd: 2000 records prepared
+08:38:11 | INFO    | doctamper-scd: reused 18000/18000 prepared records
+08:38:12 | INFO    | doctamper-scd: 18000 records prepared
+08:38:12 | INFO    | Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images
+08:38:12 | INFO    | MIDV scan found 8999 images
+08:38:20 | INFO    | midv-dm: resuming after 8999/8999 records
+08:38:20 | INFO    | MIDV: 8999 records prepared | scale-aligned masks=0
+08:38:20 | INFO    | Validating split and leakage protocol
+08:38:20 | WARNING | DocTamper masked-perceptual proxy collisions cross the immutable official benchmark boundary (8835 groups). These are diagnostic only: official TestingSet/FCD/SCD membership takes precedence over the non-authoritative proxy hash.
+08:38:22 | INFO    | Manifest ready: 178999 samples | train=108382 val=19105 test=51512
+08:38:22 | INFO    | SUCCEEDED | CPU 5% | RAM 5.4/31.0G | RSS 0.8G
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ cat output/logs/prepare/latest.json
+{
+  "command": "prepare",
+  "duration_seconds": 14.468,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.jsonl",
+  "finished_at": "2026-09-09T03:38:22+00:00",
+  "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+  "profile": "cuda",
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 84.1,
+      "system_percent": 5.1
+    },
+    "ram": {
+      "process_rss_gib": 0.838,
+      "system_available_gib": 25.617,
+      "system_percent": 17.4,
+      "system_total_gib": 31.029,
+      "system_used_gib": 5.412
+    }
+  },
+  "run_id": "20260909T033808Z-8094-6188db",
+  "samples": 178999,
+  "started_at": "2026-09-09T03:38:08+00:00",
+  "status": "succeeded",
+  "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T033808Z-8094-6188db.log"
+}
 (.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
