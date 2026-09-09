@@ -32,6 +32,9 @@ VALID_ADN_SUPERVISION = ("none", "proxy", "ground_truth")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
 ASPECT_RATIO_TOLERANCE = 1e-3
 EXIF_ORIENTATION_TAG = 274
+DOCTAMPER_OFFICIAL_TEST_BENCHMARKS = frozenset(
+    {"doctamper-testing", "doctamper-fcd", "doctamper-scd"}
+)
 
 
 @dataclass(frozen=True)
@@ -203,20 +206,48 @@ def validate_group_disjointness(records: list[ManifestRecord]) -> None:
 
 
 def validate_manifest_protocol(records: list[ManifestRecord]) -> None:
-    """Reject the protocol mistakes that made earlier FCD results misleading."""
+    """Reject split/supervision mistakes without mistaking proxy collisions for leakage.
 
-    validate_group_disjointness(records)
-    official_tests = {"doctamper-testing", "doctamper-fcd", "doctamper-scd"}
+    MIDV ``source_group`` values come from authoritative ``base_image`` provenance and
+    therefore remain strict across train/validation/test.  DocTamper has no equivalent
+    public source-document identifier: its group is a deliberately coarse masked
+    perceptual proxy.  That proxy is valid for keeping related TrainingSet samples in
+    one train/validation partition, but equality across the immutable official
+    TestingSet/FCD/SCD boundary is not proof that two source documents are identical.
+    Treating such a collision as hard leakage makes the official full release
+    impossible to prepare because visually similar document layouts can share the
+    proxy hash.
+    """
+
     for record in records:
         if record.dataset == "doctamper" and record.classification_supervised:
             raise ValueError(
                 f"DocTamper record {record.sample_id!r} cannot supervise image "
                 "classification because the release is positive-only"
             )
-        if record.benchmark in official_tests and record.split != "test":
+        if (
+            record.dataset == "doctamper"
+            and record.benchmark in DOCTAMPER_OFFICIAL_TEST_BENCHMARKS
+            and record.split != "test"
+        ):
             raise ValueError(f"Official benchmark {record.benchmark!r} must remain test-only")
-        if record.benchmark == "doctamper-training" and record.split == "test":
+        if (
+            record.dataset == "doctamper"
+            and record.benchmark == "doctamper-training"
+            and record.split == "test"
+        ):
             raise ValueError("DocTamper TrainingSet may only supply train/validation records")
+
+    # Keep exact group-disjointness semantics everywhere they are justified.
+    # The externally-defined DocTamper test benchmarks are excluded only from this
+    # proxy-equality check; their mandatory test-only status is enforced above.
+    strict_group_records = [
+        record
+        for record in records
+        if record.dataset != "doctamper"
+        or record.benchmark not in DOCTAMPER_OFFICIAL_TEST_BENCHMARKS
+    ]
+    validate_group_disjointness(strict_group_records)
 
 
 def summarize_manifest(records: list[ManifestRecord]) -> dict[str, Any]:

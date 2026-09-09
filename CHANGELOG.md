@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.2
+
+- Fixed full DocTamper preparation failing after successful conversion when the
+  coarse masked perceptual proxy collides across TrainingSet and official test
+  benchmarks. Official TestingSet/FCD/SCD membership now takes precedence;
+  cross-benchmark proxy collisions are emitted as diagnostics instead of fatal
+  leakage errors.
+- Kept strict source-group disjointness for MIDV and for DocTamper TrainingSet
+  train/validation splitting.
+- Kept v0.5.1 preparation journal contracts compatible so the already prepared
+  170,000 DocTamper records and completed MIDV records can be reused.
+- Added bounded pip retries to CPU/CUDA setup for transient package-index
+  failures without weakening the active-environment reset guard.
+- Fixed CLI dispatch so `<command> --help` shows the selected command's
+  arguments instead of the top-level help screen.
+
 ## 0.5.1
 
 - Added contract-checked, atomic recovery state for setup, preparation,

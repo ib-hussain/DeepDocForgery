@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deep-doc-forgery"
-version = "0.5.1"
+version = "0.5.2"
 description = "Combined DocTamper and MIDV-DM document-forgery research pipeline"
 readme = "README.md"
 requires-python = ">=3.10"

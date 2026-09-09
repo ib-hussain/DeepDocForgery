@@ -1,8 +1,21 @@
-# DeepDocForgery 0.5.1
+# DeepDocForgery 0.5.2
 
 DeepDocForgery is a research pipeline for joint document-level forgery
 classification and pixel-level tamper localization. It trains through one
 manifest while preserving the different roles of DocTamper and MIDV-DM.
+
+## What changed in 0.5.2
+
+- Fixed full-data preparation aborts caused by collisions in DocTamper's
+  non-authoritative masked perceptual proxy. TrainingSet train/validation
+  grouping remains strict, while immutable TestingSet/FCD/SCD boundaries now
+  take precedence and cross-benchmark proxy collisions are logged for audit.
+- Existing v0.5.1 preparation journals remain reusable; rerun the same prepare
+  command without `--fresh` to continue from the completed records.
+- CPU/CUDA setup retries transient pip installation failures while preserving
+  the existing environment-resume and active-environment safety checks.
+- Subcommand help now dispatches correctly (`deepdocforgery prepare --help`,
+  `train --help`, and the other command-specific help screens).
 
 ## What changed in 0.5.1
 
@@ -52,9 +65,11 @@ The 0.4 scientific and data-protocol corrections remain in place:
   are positive-only. MIDV supplies authentic and forged classification labels.
 - MIDV records are grouped by the JSON `base_image` (or a category-independent
   fallback), so derivatives of one source document cannot cross splits.
-- DocTamper uses a masked perceptual source proxy for group-safe splitting;
-  absent authoritative source IDs, this reduces but cannot mathematically
-  eliminate source-document leakage.
+- DocTamper uses a masked perceptual source proxy for TrainingSet train/validation
+  grouping; absent authoritative source IDs, this reduces but cannot mathematically
+  eliminate source-document leakage. The official TestingSet/FCD/SCD boundary is
+  authoritative, so proxy collisions across it are audited rather than treated as proof
+  of leakage.
 - Exact JPEG coefficients are used only when geometry is unchanged; resized or
   augmented samples use the differentiable pixel-DCT fallback.
 - JPEG recompression and noise augmentations provide degradation targets.

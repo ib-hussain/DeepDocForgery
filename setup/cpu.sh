@@ -62,6 +62,27 @@ PY
 
 write_setup_state "running" "${COMPLETED_STEP}"
 
+pip_retry() {
+  local attempts="${PIP_INSTALL_ATTEMPTS:-3}"
+  local delay_seconds="${PIP_RETRY_DELAY_SECONDS:-2}"
+  local attempt
+  if ! [[ "${attempts}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "PIP_INSTALL_ATTEMPTS must be a positive integer, got: ${attempts}" >&2
+    return 2
+  fi
+  for ((attempt=1; attempt<=attempts; attempt++)); do
+    if "$@"; then
+      return 0
+    fi
+    if (( attempt == attempts )); then
+      echo "pip command failed after ${attempts} attempt(s): $*" >&2
+      return 1
+    fi
+    echo "pip command failed (attempt ${attempt}/${attempts}); retrying..." >&2
+    sleep "${delay_seconds}"
+  done
+}
+
 report_setup_exit() {
   local exit_code=$?
   if [[ "${exit_code}" != "0" ]]; then
@@ -106,9 +127,9 @@ printf 'cpu\n' > "${PROFILE_MARKER}"
 COMPLETED_STEP="environment_created"
 write_setup_state "running" "${COMPLETED_STEP}"
 
-"${VENV_PATH}/bin/python" -m pip install --upgrade pip wheel "setuptools<82"
-"${VENV_PATH}/bin/python" -m pip install torch --index-url "${PYTORCH_CPU_INDEX_URL}"
-"${VENV_PATH}/bin/python" -m pip install -e "${PROJECT_ROOT}[dev,data]"
+pip_retry "${VENV_PATH}/bin/python" -m pip install --upgrade pip wheel "setuptools<82"
+pip_retry "${VENV_PATH}/bin/python" -m pip install torch --index-url "${PYTORCH_CPU_INDEX_URL}"
+pip_retry "${VENV_PATH}/bin/python" -m pip install -e "${PROJECT_ROOT}[dev,data]"
 COMPLETED_STEP="dependencies_installed"
 write_setup_state "running" "${COMPLETED_STEP}"
 "${VENV_PATH}/bin/python" -m pip check

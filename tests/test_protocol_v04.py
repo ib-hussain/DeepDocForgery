@@ -273,6 +273,86 @@ def test_doctamper_fixture_preserves_official_protocol(tmp_path: Path) -> None:
             assert record.split == "test"
 
 
+def _doctamper_protocol_record(
+    *, sample_id: str, benchmark: str, split: str, source_group: str = "proxy-collision"
+) -> ManifestRecord:
+    return ManifestRecord(
+        sample_id=sample_id,
+        image=f"{sample_id}.jpg",
+        mask=f"{sample_id}.png",
+        split=split,
+        label=1,
+        source_group=source_group,
+        dataset="doctamper",
+        benchmark=benchmark,
+        classification_supervised=False,
+        localization_supervised=True,
+    )
+
+
+def test_doctamper_proxy_collision_across_official_boundary_is_not_hard_leakage() -> None:
+    records = [
+        _doctamper_protocol_record(
+            sample_id="training", benchmark="doctamper-training", split="train"
+        ),
+        _doctamper_protocol_record(
+            sample_id="testing", benchmark="doctamper-testing", split="test"
+        ),
+        _doctamper_protocol_record(sample_id="fcd", benchmark="doctamper-fcd", split="test"),
+    ]
+    # The masked perceptual proxy is non-authoritative across official benchmark
+    # boundaries, so this collision is diagnostic rather than a fatal protocol error.
+    validate_manifest_protocol(records)
+
+
+def test_doctamper_training_proxy_still_cannot_cross_train_and_validation() -> None:
+    records = [
+        _doctamper_protocol_record(
+            sample_id="train", benchmark="doctamper-training", split="train"
+        ),
+        _doctamper_protocol_record(
+            sample_id="val", benchmark="doctamper-training", split="val"
+        ),
+    ]
+    with pytest.raises(ValueError, match="Source groups"):
+        validate_manifest_protocol(records)
+
+
+def test_midv_authoritative_source_group_still_cannot_cross_splits() -> None:
+    records = [
+        ManifestRecord(
+            sample_id="midv-train",
+            image="train.jpg",
+            mask="train.png",
+            split="train",
+            label=0,
+            source_group="midv:alb_id/11",
+            dataset="midv",
+            benchmark="midv-dm",
+        ),
+        ManifestRecord(
+            sample_id="midv-test",
+            image="test.jpg",
+            mask="test.png",
+            split="test",
+            label=1,
+            source_group="midv:alb_id/11",
+            dataset="midv",
+            benchmark="midv-dm",
+        ),
+    ]
+    with pytest.raises(ValueError, match="Source groups"):
+        validate_manifest_protocol(records)
+
+
+def test_doctamper_official_test_benchmark_cannot_move_into_training() -> None:
+    record = _doctamper_protocol_record(
+        sample_id="bad-fcd-split", benchmark="doctamper-fcd", split="train"
+    )
+    with pytest.raises(ValueError, match="must remain test-only"):
+        validate_manifest_protocol([record])
+
+
 def test_protocol_rejects_leaky_fcd_and_fake_classification() -> None:
     record = ManifestRecord(
         sample_id="bad",

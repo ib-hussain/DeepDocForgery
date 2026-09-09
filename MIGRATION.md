@@ -52,3 +52,13 @@ Training now resumes `<output>/last.pt` automatically. Existing older
 checkpoints remain loadable when their embedded configuration and current
 manifest match, but their first resumed epoch cannot be bit-for-bit identical
 because older checkpoints did not store every random-generator state.
+
+
+## v0.5.1 to v0.5.2
+
+Do not use `--fresh` merely to upgrade. Version 0.5.2 intentionally keeps the
+v0.5.1 preparation record-journal contract compatible. If full-data preparation
+previously stopped at `Source groups cross dataset splits` after all DocTamper
+and MIDV records had been prepared, install the new code and rerun the identical
+`prepare` command. The journals are reused and only protocol validation/manifest
+finalisation is repeated.

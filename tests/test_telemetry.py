@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -88,6 +89,18 @@ def test_atomic_json_writers_do_not_share_temporary_files(tmp_path: Path) -> Non
 def test_testing_and_status_are_first_class_commands() -> None:
     assert COMMANDS["test"] == "deepdocforgery.evaluate"
     assert COMMANDS["status"] == "deepdocforgery.status"
+
+
+def test_subcommand_help_is_dispatched_to_the_subcommand() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "deepdocforgery", "prepare", "--help"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "--profile" in completed.stdout
+    assert "--validation-fraction" in completed.stdout
+    assert "Combined DocTamper + MIDV-DM forgery research pipeline" not in completed.stdout
 
 
 def test_nvidia_smi_snapshot_reports_load_and_competing_process(

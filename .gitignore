@@ -1,3 +1,4 @@
+# Python / build / environments
 __pycache__/
 *.py[cod]
 *cache/
@@ -14,21 +15,17 @@ dist/
 checkpoints/
 runs/
 
-
 # User-managed datasets
 data/**dataset**/
-data/sample-midv/
+data/sample**/
 data/manifests/
 data/processed/
 data/*.zip
-# data/raw/
-# data/processed/
 
-# Generated artefacts (folder documentation remains tracked)
+# Generated artefacts (folder documentation such as output/README.md stays tracked)
 output/**/*.json
 output/**/*.jsonl
-# output/**/*.log
-!output/logs/
+output/**/*.log
 output/**/*.yaml
 output/**/*.pt
 output/**/*.pth
@@ -40,14 +37,11 @@ output/**/*.npy
 output/**/*.npz
 output/**/*.csv
 output/**/*.tmp
+output/**/*.lock
 output/processed/**
-output/processed/
-# output/logs/
-# output/mainfests/
-# output/model/
-# output/embeddings/
-# output/hpo/
+output/logs/pytest-cache/
 
+# Local archives / temporary files / credentials
 archive/
 temp*.*
 *.zip

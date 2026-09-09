@@ -19,6 +19,7 @@ import torch
 from PIL import Image
 
 from deepdocforgery.data import (
+    DOCTAMPER_OFFICIAL_TEST_BENCHMARKS,
     IMAGE_EXTENSIONS,
     ManifestRecord,
     orient_mask_for_image,
@@ -197,6 +198,34 @@ def assigned_split(sample_id: str, subset: str, seed: int, val_ratio: float) -> 
 def _hash_fraction(value: str, seed: int) -> float:
     digest = hashlib.sha256(f"{seed}:{value}".encode()).digest()
     return int.from_bytes(digest[:8], "big") / float(2**64)
+
+
+def _doctamper_proxy_collision_summary(records: list[ManifestRecord]) -> dict[str, Any]:
+    """Summarise approximate proxy collisions across official DocTamper boundaries."""
+
+    groups: dict[str, dict[str, set[str]]] = {}
+    for record in records:
+        if record.dataset != "doctamper":
+            continue
+        entry = groups.setdefault(record.source_group, {"benchmarks": set(), "splits": set()})
+        entry["benchmarks"].add(record.benchmark)
+        entry["splits"].add(record.split)
+
+    collisions: list[tuple[str, list[str]]] = []
+    for source_group, value in groups.items():
+        benchmarks = value["benchmarks"]
+        if "doctamper-training" in benchmarks and benchmarks.intersection(
+            DOCTAMPER_OFFICIAL_TEST_BENCHMARKS
+        ):
+            collisions.append((source_group, sorted(benchmarks)))
+    collisions.sort()
+    return {
+        "count": len(collisions),
+        "preview": [
+            {"source_group": source_group, "benchmarks": benchmarks}
+            for source_group, benchmarks in collisions[:5]
+        ],
+    }
 
 
 def _split_groups(
@@ -1064,6 +1093,17 @@ def _prepare_unlocked(args: argparse.Namespace, run: RunLogger) -> dict[str, Any
     )
     run.info("Validating split and leakage protocol", event="protocol_validation_started")
     records.sort(key=lambda record: (record.split, record.dataset, record.sample_id))
+    proxy_collisions = _doctamper_proxy_collision_summary(records)
+    if proxy_collisions["count"]:
+        run.warning(
+            "DocTamper masked-perceptual proxy collisions cross the immutable official "
+            f"benchmark boundary ({proxy_collisions['count']} groups). These are diagnostic "
+            "only: official TestingSet/FCD/SCD membership takes precedence over the "
+            "non-authoritative proxy hash.",
+            event="doctamper_proxy_cross_benchmark_collision",
+            collisions=proxy_collisions["count"],
+            preview=proxy_collisions["preview"],
+        )
     validate_manifest_protocol(records)
     write_manifest(records, output)
     digest = sha256_file(output)
@@ -1084,7 +1124,11 @@ def _prepare_unlocked(args: argparse.Namespace, run: RunLogger) -> dict[str, Any
                 "doctamper_training": "train/validation only",
                 "doctamper_testing_fcd_scd": "test only",
                 "doctamper_classification": "disabled (positive-only release)",
-                "doctamper_grouping": "masked perceptual proxy; audit provenance",
+                "doctamper_grouping": (
+                    "masked perceptual proxy for TrainingSet train/validation grouping; "
+                    "official test boundaries take precedence over proxy collisions"
+                ),
+                "doctamper_proxy_cross_benchmark_collisions": proxy_collisions,
                 "midv": "source-group-disjoint train/validation/test",
             },
         }
