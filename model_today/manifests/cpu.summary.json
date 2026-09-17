@@ -1,0 +1,52 @@
+{
+  "adn_supervision": {
+    "proxy": 282
+  },
+  "benchmarks": {
+    "doctamper-fcd": 3,
+    "doctamper-scd": 3,
+    "doctamper-testing": 3,
+    "doctamper-training": 3,
+    "midv-dm": 270
+  },
+  "classification_supervised": 270,
+  "datasets": {
+    "doctamper": 12,
+    "midv": 270
+  },
+  "degradation_supervised": 0,
+  "groups": 42,
+  "labels": {
+    "test": {
+      "0": 6,
+      "1": 57
+    },
+    "train": {
+      "0": 18,
+      "1": 146
+    },
+    "val": {
+      "0": 6,
+      "1": 49
+    }
+  },
+  "localization_supervised": 282,
+  "manifest": "/mnt/d/Downloads/Repositories/deepFakeDetection/output/manifests/cpu.jsonl",
+  "profile": "cpu",
+  "protocol": {
+    "doctamper_classification": "disabled (positive-only release)",
+    "doctamper_grouping": "masked perceptual proxy; audit provenance",
+    "doctamper_testing_fcd_scd": "test only",
+    "doctamper_training": "train/validation only",
+    "midv": "source-group-disjoint train/validation/test"
+  },
+  "samples": 282,
+  "sha256": "1bc107470c6f5a7ff7c3503577497034a1b0e7a13b0690d2958fc47febb6d967",
+  "splits": {
+    "test": 63,
+    "train": 164,
+    "val": 55
+  },
+  "status": "ok",
+  "summary": "/mnt/d/Downloads/Repositories/deepFakeDetection/output/manifests/cpu.summary.json"
+}

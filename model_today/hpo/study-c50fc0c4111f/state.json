@@ -1,0 +1,837 @@
+{
+  "contract": "c50fc0c4111f7fecbe314292a24d6186ff5f67c7eb3a62ec415caeb97a81fce3",
+  "current_trial": 10,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/hpo/20260916T032605Z-23240-3a340f.jsonl",
+  "format_version": 1,
+  "output_dir": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f",
+  "plans": [
+    {
+      "data.augmentation.crop_probability": 0.4,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0002,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 3.0,
+      "training.learning_rate": 0.0001,
+      "training.weight_decay": 0.0001
+    },
+    {
+      "data.augmentation.crop_probability": 0.55,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0002,
+      "training.weight_decay": 0.0001
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0001,
+      "training.weight_decay": 0.0001
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 3.0,
+      "training.learning_rate": 0.0001,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.55,
+      "loss.main.positive_pixel_weight": 3.0,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.55,
+      "loss.main.positive_pixel_weight": 3.0,
+      "training.learning_rate": 0.0002,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.4,
+      "loss.main.positive_pixel_weight": 2.0,
+      "training.learning_rate": 0.0001,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.55,
+      "loss.main.positive_pixel_weight": 2.0,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.25,
+      "loss.main.positive_pixel_weight": 3.0,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.4,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    },
+    {
+      "data.augmentation.crop_probability": 0.55,
+      "loss.main.positive_pixel_weight": 1.5,
+      "training.learning_rate": 0.0003,
+      "training.weight_decay": 1e-05
+    }
+  ],
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 0.1,
+      "system_percent": 22.6
+    },
+    "cuda": {
+      "allocated_gib": 0.0,
+      "device": 0,
+      "device_free_gib": 18.872,
+      "device_total_gib": 19.54,
+      "device_used_gib": 0.668,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 23240,
+            "used_vram_gib": 0.156
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 18.872,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 0.668,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 36.2,
+        "power_limit_w": 130.0,
+        "temperature_c": 55.0,
+        "utilization_percent": 0.0
+      },
+      "peak_allocated_gib": 0.0,
+      "reserved_gib": 0.0
+    },
+    "ram": {
+      "process_rss_gib": 0.316,
+      "system_available_gib": 26.9,
+      "system_percent": 13.3,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.129
+    }
+  },
+  "resume_command": "python -m deepdocforgery hpo --config configs/cuda/full.yaml --search configs/cuda/hpo.yaml --output output/hpo --device cuda --log-dir output/logs",
+  "run_id": "20260916T032605Z-23240-3a340f",
+  "stage": "hpo",
+  "status": "running",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/hpo/20260916T032605Z-23240-3a340f.log",
+  "trials": [
+    {
+      "best_epoch": 3,
+      "duration_seconds": 2558.39424719,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.4,
+        "loss.main.positive_pixel_weight": 1.5,
+        "training.learning_rate": 0.0002,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 35.6,
+          "system_percent": 4.0
+        },
+        "cuda": {
+          "allocated_gib": 1.42,
+          "device": 0,
+          "device_free_gib": 1.214,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.325,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 23331,
+                "used_vram_gib": 17.645
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.215,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.326,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.79,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 9.0
+          },
+          "peak_allocated_gib": 16.822,
+          "reserved_gib": 17.154
+        },
+        "ram": {
+          "process_rss_gib": 1.143,
+          "system_available_gib": 26.682,
+          "system_percent": 14.0,
+          "system_total_gib": 31.029,
+          "system_used_gib": 4.347
+        }
+      },
+      "score": 0.14718011822605556,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/train-result.json",
+      "trial": 0
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2633.146434784,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.25,
+        "loss.main.positive_pixel_weight": 3.0,
+        "training.learning_rate": 0.0001,
+        "training.weight_decay": 0.0001
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 34.1,
+          "system_percent": 3.9
+        },
+        "cuda": {
+          "allocated_gib": 1.452,
+          "device": 0,
+          "device_free_gib": 1.22,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.32,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 56172,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.221,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.32,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.82,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 11.0
+          },
+          "peak_allocated_gib": 16.821,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.05,
+          "system_available_gib": 24.514,
+          "system_percent": 21.0,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.515
+        }
+      },
+      "score": 0.17677971940387086,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-001/train-result.json",
+      "trial": 1
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2594.0111831589993,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.55,
+        "loss.main.positive_pixel_weight": 1.5,
+        "training.learning_rate": 0.0003,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 34.2,
+          "system_percent": 3.9
+        },
+        "cuda": {
+          "allocated_gib": 1.422,
+          "device": 0,
+          "device_free_gib": 1.221,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.319,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 93992,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.222,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.319,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.68,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 9.0
+          },
+          "peak_allocated_gib": 16.819,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.059,
+          "system_available_gib": 24.617,
+          "system_percent": 20.7,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.412
+        }
+      },
+      "score": 0.14927120832058255,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-002/train-result.json",
+      "trial": 2
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2617.1801705450016,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.25,
+        "loss.main.positive_pixel_weight": 1.5,
+        "training.learning_rate": 0.0002,
+        "training.weight_decay": 0.0001
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 33.9,
+          "system_percent": 3.8
+        },
+        "cuda": {
+          "allocated_gib": 1.451,
+          "device": 0,
+          "device_free_gib": 1.221,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.318,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 131344,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.222,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.319,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.69,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 9.0
+          },
+          "peak_allocated_gib": 16.815,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.044,
+          "system_available_gib": 24.493,
+          "system_percent": 21.1,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.536
+        }
+      },
+      "score": 0.17126603864483458,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-003/train-result.json",
+      "trial": 3
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2595.270717485,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.25,
+        "loss.main.positive_pixel_weight": 1.5,
+        "training.learning_rate": 0.0001,
+        "training.weight_decay": 0.0001
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 33.6,
+          "system_percent": 3.6
+        },
+        "cuda": {
+          "allocated_gib": 1.451,
+          "device": 0,
+          "device_free_gib": 1.229,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.311,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 168894,
+                "used_vram_gib": 17.645
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.229,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.312,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 34.15,
+            "power_limit_w": 130.0,
+            "temperature_c": 55.0,
+            "utilization_percent": 3.0
+          },
+          "peak_allocated_gib": 16.822,
+          "reserved_gib": 17.154
+        },
+        "ram": {
+          "process_rss_gib": 3.058,
+          "system_available_gib": 24.531,
+          "system_percent": 20.9,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.498
+        }
+      },
+      "score": 0.1564087896725814,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-004/train-result.json",
+      "trial": 4
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2596.4319347319997,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.25,
+        "loss.main.positive_pixel_weight": 3.0,
+        "training.learning_rate": 0.0001,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 34.0,
+          "system_percent": 3.5
+        },
+        "cuda": {
+          "allocated_gib": 1.454,
+          "device": 0,
+          "device_free_gib": 1.23,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.31,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 206344,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.23,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.311,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 34.4,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 3.0
+          },
+          "peak_allocated_gib": 16.823,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.054,
+          "system_available_gib": 24.466,
+          "system_percent": 21.2,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.563
+        }
+      },
+      "score": 0.1628573069578712,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-005/train-result.json",
+      "trial": 5
+    },
+    {
+      "best_epoch": 3,
+      "duration_seconds": 2599.2700016300005,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.55,
+        "loss.main.positive_pixel_weight": 3.0,
+        "training.learning_rate": 0.0003,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 33.3,
+          "system_percent": 3.7
+        },
+        "cuda": {
+          "allocated_gib": 1.422,
+          "device": 0,
+          "device_free_gib": 1.223,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.317,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 243746,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.224,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.317,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 34.44,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 3.0
+          },
+          "peak_allocated_gib": 16.817,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.062,
+          "system_available_gib": 24.378,
+          "system_percent": 21.4,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.651
+        }
+      },
+      "score": 0.13952121873008091,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-006/train-result.json",
+      "trial": 6
+    },
+    {
+      "best_epoch": 3,
+      "duration_seconds": 2603.171913058999,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.55,
+        "loss.main.positive_pixel_weight": 3.0,
+        "training.learning_rate": 0.0002,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 34.0,
+          "system_percent": 3.5
+        },
+        "cuda": {
+          "allocated_gib": 1.422,
+          "device": 0,
+          "device_free_gib": 1.223,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.316,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 281285,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.224,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.316,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 34.32,
+            "power_limit_w": 130.0,
+            "temperature_c": 56.0,
+            "utilization_percent": 2.0
+          },
+          "peak_allocated_gib": 16.819,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.04,
+          "system_available_gib": 24.515,
+          "system_percent": 21.0,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.514
+        }
+      },
+      "score": 0.1543771147239297,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-007/train-result.json",
+      "trial": 7
+    },
+    {
+      "best_epoch": 5,
+      "duration_seconds": 2578.176804011,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.25,
+        "loss.main.positive_pixel_weight": 1.5,
+        "training.learning_rate": 0.0003,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 36.1,
+          "system_percent": 3.8
+        },
+        "cuda": {
+          "allocated_gib": 1.453,
+          "device": 0,
+          "device_free_gib": 1.225,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.315,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 318662,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.225,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.315,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.61,
+            "power_limit_w": 130.0,
+            "temperature_c": 55.0,
+            "utilization_percent": 3.0
+          },
+          "peak_allocated_gib": 16.822,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.046,
+          "system_available_gib": 24.495,
+          "system_percent": 21.1,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.534
+        }
+      },
+      "score": 0.16991006172067333,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-008/train-result.json",
+      "trial": 8
+    },
+    {
+      "best_epoch": 3,
+      "duration_seconds": 2579.5280846509995,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.4,
+        "loss.main.positive_pixel_weight": 2.0,
+        "training.learning_rate": 0.0001,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 34.4,
+          "system_percent": 3.9
+        },
+        "cuda": {
+          "allocated_gib": 1.42,
+          "device": 0,
+          "device_free_gib": 1.222,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.317,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 356563,
+                "used_vram_gib": 17.645
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.223,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.318,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.35,
+            "power_limit_w": 130.0,
+            "temperature_c": 55.0,
+            "utilization_percent": 10.0
+          },
+          "peak_allocated_gib": 16.823,
+          "reserved_gib": 17.154
+        },
+        "ram": {
+          "process_rss_gib": 3.061,
+          "system_available_gib": 24.397,
+          "system_percent": 21.4,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.632
+        }
+      },
+      "score": 0.1634838872676715,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-009/train-result.json",
+      "trial": 9
+    },
+    {
+      "best_epoch": 3,
+      "duration_seconds": 2586.126909575003,
+      "parameters": {
+        "data.augmentation.crop_probability": 0.55,
+        "loss.main.positive_pixel_weight": 2.0,
+        "training.learning_rate": 0.0003,
+        "training.weight_decay": 1e-05
+      },
+      "resources": {
+        "cpu": {
+          "logical": 28,
+          "physical": 20,
+          "process_percent": 33.3,
+          "system_percent": 3.9
+        },
+        "cuda": {
+          "allocated_gib": 1.422,
+          "device": 0,
+          "device_free_gib": 1.224,
+          "device_total_gib": 19.54,
+          "device_used_gib": 18.315,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "nvidia_smi": {
+            "compute_processes": [
+              {
+                "name": "python",
+                "pid": 23240,
+                "used_vram_gib": 0.156
+              },
+              {
+                "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+                "pid": 393964,
+                "used_vram_gib": 17.643
+              }
+            ],
+            "index": 0,
+            "memory_free_gib": 1.225,
+            "memory_total_gib": 19.995,
+            "memory_used_gib": 18.316,
+            "name": "NVIDIA RTX 4000 Ada Generation",
+            "power_draw_w": 35.47,
+            "power_limit_w": 130.0,
+            "temperature_c": 55.0,
+            "utilization_percent": 9.0
+          },
+          "peak_allocated_gib": 16.819,
+          "reserved_gib": 17.152
+        },
+        "ram": {
+          "process_rss_gib": 3.055,
+          "system_available_gib": 24.459,
+          "system_percent": 21.2,
+          "system_total_gib": 31.029,
+          "system_used_gib": 6.57
+        }
+      },
+      "score": 0.15601631048787098,
+      "selection_metric": "pixel_macro/f1_forged",
+      "status": "ok",
+      "train_result": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-010/train-result.json",
+      "trial": 10
+    }
+  ],
+  "updated_at": "2026-09-16T11:21:47+00:00"
+}

@@ -1,0 +1,116 @@
+runtime:
+  minimum_total_vram_gib: 18.0
+  minimum_free_vram_gib: 16.0
+  maximum_preflight_gpu_utilization_percent: 50.0
+data:
+  manifest: output/manifests/cuda.jsonl
+  batch_size: 11
+  num_workers: auto
+  prefetch_factor: 2
+  persistent_workers: false
+  pin_memory: true
+  image_size:
+  - 512
+  - 512
+  exact_dct_probability: 0.35
+  sampling:
+    dataset_weights:
+      doctamper: 1.0
+      midv: 4.0
+  augmentation:
+    enabled: true
+    horizontal_flip_probability: 0.5
+    crop_probability: 0.25
+    crop_scale_range:
+    - 0.55
+    - 1.0
+    jpeg_probability: 0.55
+    jpeg_quality_range:
+    - 45
+    - 98
+    gaussian_noise_probability: 0.2
+    gaussian_noise_maximum: 0.03
+model:
+  dct:
+    stem_channels: 32
+    out_channels:
+    - 64
+    - 128
+    - 256
+    level_names:
+    - s8
+    - s16
+    - s32
+  degradation_estimator:
+    metadata_dimension: 32
+    fusion_channels:
+    - 64
+    - 128
+    - 256
+    noise_types:
+    - none
+    - gaussian
+    - poisson
+    - speckle
+  spatial:
+    out_channels:
+    - 64
+    - 128
+    - 256
+    level_names:
+    - s8
+    - s16
+    - s32
+    vit:
+      backend: timm
+      name: swin_tiny_patch4_window7_224.ms_in1k
+      pretrained: true
+      image_size:
+      - 512
+      - 512
+      out_indices:
+      - 1
+      - 2
+      - 3
+      gradient_checkpointing: true
+    adn:
+      stem_channels: 48
+      depths:
+      - 1
+      - 2
+      - 4
+  fusion:
+    out_channels:
+    - 64
+    - 128
+    - 256
+    refinement_depth: 2
+  decoder:
+    channels: 128
+    class_dimension: 256
+    refinement_depth: 2
+    dropout: 0.1
+loss:
+  main:
+    positive_pixel_weight: 3.0
+    topk_fraction: 0.005
+training:
+  seed: 7
+  cpu_threads: auto
+  amp: true
+  epochs: 50
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  backbone_learning_rate_multiplier: 0.25
+  minimum_learning_rate: 1.0e-06
+  gradient_accumulation_steps: 4
+  gradient_clip_norm: 5.0
+  output_dir: /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full
+  selection_metric: pixel_macro/f1_forged
+  save_every_epochs: 1
+metrics:
+  mask_threshold: 0.5
+  image_threshold: 0.5
+  catastrophic_f1_threshold: 0.1
+logging:
+  resource_interval_batches: 1000

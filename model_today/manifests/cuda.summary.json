@@ -1,0 +1,128 @@
+{
+  "adn_supervision": {
+    "proxy": 179000
+  },
+  "benchmarks": {
+    "doctamper-fcd": 2000,
+    "doctamper-scd": 18000,
+    "doctamper-testing": 30000,
+    "doctamper-training": 120000,
+    "midv-dm": 9000
+  },
+  "classification_supervised": 9000,
+  "compute": {
+    "logical_cpus": 28,
+    "physical_cpus": 20,
+    "thread_environment": {
+      "BLIS_NUM_THREADS": "28",
+      "MKL_NUM_THREADS": "28",
+      "NUMEXPR_NUM_THREADS": "28",
+      "OMP_NUM_THREADS": "28",
+      "OPENBLAS_NUM_THREADS": "28",
+      "VECLIB_MAXIMUM_THREADS": "28"
+    },
+    "torch_interop_threads": 4,
+    "torch_threads": 28
+  },
+  "datasets": {
+    "doctamper": 170000,
+    "midv": 9000
+  },
+  "degradation_supervised": 0,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T061525Z-31968-474514.jsonl",
+  "exif_transposed_images": 500,
+  "groups": 125986,
+  "labels": {
+    "test": {
+      "0": 168,
+      "1": 51344
+    },
+    "train": {
+      "0": 692,
+      "1": 107691
+    },
+    "val": {
+      "0": 140,
+      "1": 18965
+    }
+  },
+  "localization_supervised": 179000,
+  "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+  "profile": "cuda",
+  "protocol": {
+    "doctamper_classification": "disabled (positive-only release)",
+    "doctamper_grouping": "masked perceptual proxy for TrainingSet train/validation grouping; official test boundaries take precedence over proxy collisions",
+    "doctamper_proxy_cross_benchmark_collisions": {
+      "count": 8835,
+      "preview": [
+        {
+          "benchmarks": [
+            "doctamper-scd",
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000000ffffffff"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-000000017fffffff"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000001ffffffdf"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000001fffffffe"
+        },
+        {
+          "benchmarks": [
+            "doctamper-testing",
+            "doctamper-training"
+          ],
+          "source_group": "doctamper:masked-ahash-00000002efffffff"
+        }
+      ]
+    },
+    "doctamper_testing_fcd_scd": "test only",
+    "doctamper_training": "train/validation only",
+    "midv": "source-group-disjoint train/validation/test"
+  },
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 56.9,
+      "system_percent": 3.6
+    },
+    "ram": {
+      "process_rss_gib": 0.413,
+      "system_available_gib": 26.953,
+      "system_percent": 13.1,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.075
+    }
+  },
+  "resume_state": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/state.json",
+  "samples": 179000,
+  "scale_aligned_masks": 0,
+  "sha256": "e591e5a807d93d0b195255003936def718fa91e6059d1fa8c8f1e0d31cedf74a",
+  "splits": {
+    "test": 51512,
+    "train": 108383,
+    "val": 19105
+  },
+  "status": "ok",
+  "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T061525Z-31968-474514.log",
+  "workers": 20
+}

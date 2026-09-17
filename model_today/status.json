@@ -1,0 +1,67 @@
+{
+  "best_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/best.pt",
+  "best_metric": 0.6004261404295168,
+  "command": "train",
+  "contract": "cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1",
+  "epoch": 2,
+  "epochs": 50,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260917T050720Z-14771-346ca6.jsonl",
+  "global_step": 4928,
+  "last_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt",
+  "performance": {
+    "epoch_duration_seconds": 11120.543646047,
+    "train_batches_per_second": 1.1267138294433598,
+    "train_samples_per_second": 12.39385212387696,
+    "training_duration_seconds": 8744.900206708
+  },
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 12.9,
+      "system_percent": 34.7
+    },
+    "cuda": {
+      "allocated_gib": 1.419,
+      "device": 0,
+      "device_free_gib": 0.996,
+      "device_total_gib": 19.54,
+      "device_used_gib": 18.544,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 14771,
+            "used_vram_gib": 18.078
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 0.992,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 18.549,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 51.71,
+        "power_limit_w": 130.0,
+        "temperature_c": 53.0,
+        "utilization_percent": 0.0
+      },
+      "peak_allocated_gib": 16.824,
+      "reserved_gib": 17.586
+    },
+    "ram": {
+      "process_rss_gib": 3.086,
+      "system_available_gib": 23.001,
+      "system_percent": 25.9,
+      "system_total_gib": 31.029,
+      "system_used_gib": 8.028
+    }
+  },
+  "resume_command": "python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full --log-dir output/logs",
+  "run_id": "20260917T050720Z-14771-346ca6",
+  "selection_metric": "pixel_macro/f1_forged",
+  "started_at": "2026-09-17T05:07:20+00:00",
+  "status": "running",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260917T050720Z-14771-346ca6.log",
+  "updated_at": "2026-09-17T11:19:53+00:00"
+}

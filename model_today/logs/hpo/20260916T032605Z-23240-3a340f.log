@@ -1,0 +1,27 @@
+08:26:05 | INFO    | STARTED
+08:26:05 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/hpo/20260916T032605Z-23240-3a340f.log
+08:26:05 | INFO    | HPO started: 14 trials on cuda
+08:26:06 | INFO    | CPU 6% | RAM 5.9/31.0G | RSS 0.5G | VRAM 0.6/19.5G | GPU 37% | temp 46C | alloc/reserved/peak 0.0/0.0/0.0G
+08:26:06 | INFO    | Trial 1/14 started: {'data.augmentation.crop_probability': 0.4, 'loss.main.positive_pixel_weight': 1.5, 'training.learning_rate': 0.0002, 'training.weight_decay': 1e-05}
+09:08:44 | INFO    | Trial 1/14 complete | pixel_macro/f1_forged=0.14718011822605556
+09:08:44 | INFO    | Trial 2/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 3.0, 'training.learning_rate': 0.0001, 'training.weight_decay': 0.0001}
+09:52:37 | INFO    | Trial 2/14 complete | pixel_macro/f1_forged=0.17677971940387086
+09:52:37 | INFO    | Trial 3/14 started: {'data.augmentation.crop_probability': 0.55, 'loss.main.positive_pixel_weight': 1.5, 'training.learning_rate': 0.0003, 'training.weight_decay': 1e-05}
+10:35:51 | INFO    | Trial 3/14 complete | pixel_macro/f1_forged=0.14927120832058255
+10:35:51 | INFO    | Trial 4/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 1.5, 'training.learning_rate': 0.0002, 'training.weight_decay': 0.0001}
+11:19:29 | INFO    | Trial 4/14 complete | pixel_macro/f1_forged=0.17126603864483458
+11:19:29 | INFO    | Trial 5/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 1.5, 'training.learning_rate': 0.0001, 'training.weight_decay': 0.0001}
+12:02:44 | INFO    | Trial 5/14 complete | pixel_macro/f1_forged=0.1564087896725814
+12:02:44 | INFO    | Trial 6/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 3.0, 'training.learning_rate': 0.0001, 'training.weight_decay': 1e-05}
+12:46:01 | INFO    | Trial 6/14 complete | pixel_macro/f1_forged=0.1628573069578712
+12:46:01 | INFO    | Trial 7/14 started: {'data.augmentation.crop_probability': 0.55, 'loss.main.positive_pixel_weight': 3.0, 'training.learning_rate': 0.0003, 'training.weight_decay': 1e-05}
+13:29:20 | INFO    | Trial 7/14 complete | pixel_macro/f1_forged=0.13952121873008091
+13:29:20 | INFO    | Trial 8/14 started: {'data.augmentation.crop_probability': 0.55, 'loss.main.positive_pixel_weight': 3.0, 'training.learning_rate': 0.0002, 'training.weight_decay': 1e-05}
+14:12:43 | INFO    | Trial 8/14 complete | pixel_macro/f1_forged=0.1543771147239297
+14:12:43 | INFO    | Trial 9/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 1.5, 'training.learning_rate': 0.0003, 'training.weight_decay': 1e-05}
+14:55:41 | INFO    | Trial 9/14 complete | pixel_macro/f1_forged=0.16991006172067333
+14:55:41 | INFO    | Trial 10/14 started: {'data.augmentation.crop_probability': 0.4, 'loss.main.positive_pixel_weight': 2.0, 'training.learning_rate': 0.0001, 'training.weight_decay': 1e-05}
+15:38:41 | INFO    | Trial 10/14 complete | pixel_macro/f1_forged=0.1634838872676715
+15:38:41 | INFO    | Trial 11/14 started: {'data.augmentation.crop_probability': 0.55, 'loss.main.positive_pixel_weight': 2.0, 'training.learning_rate': 0.0003, 'training.weight_decay': 1e-05}
+16:21:47 | INFO    | Trial 11/14 complete | pixel_macro/f1_forged=0.15601631048787098
+16:21:47 | INFO    | Trial 12/14 started: {'data.augmentation.crop_probability': 0.25, 'loss.main.positive_pixel_weight': 3.0, 'training.learning_rate': 0.0003, 'training.weight_decay': 1e-05}

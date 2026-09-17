@@ -1,4 +1,4 @@
-trials: 12
+trials: 14
 seed: 7
 epochs_per_trial: 5
 maximum_train_batches: 400
