@@ -111,6 +111,11 @@ def capture_rng_state() -> dict[str, Any]:
         "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
     }
 
+def _as_byte_tensor(x):
+    """RNG states must be CPU uint8 tensors, even if the checkpoint was mapped to GPU."""
+    if isinstance(x, torch.Tensor):
+        return x.detach().to("cpu", torch.uint8)
+    return torch.tensor(x, dtype=torch.uint8)
 
 def restore_rng_state(state: Mapping[str, Any] | None) -> bool:
     """Restore available generators; return false for a legacy checkpoint."""
@@ -122,9 +127,9 @@ def restore_rng_state(state: Mapping[str, Any] | None) -> bool:
     if state.get("numpy") is not None:
         np.random.set_state(state["numpy"])
     if state.get("torch") is not None:
-        torch.set_rng_state(state["torch"])
+        torch.set_rng_state(_as_byte_tensor(state["torch"]))
     if torch.cuda.is_available() and state.get("cuda") is not None:
-        torch.cuda.set_rng_state_all(state["cuda"])
+        torch.cuda.set_rng_state_all([_as_byte_tensor(s) for s in state["cuda"]])
     return True
 
 

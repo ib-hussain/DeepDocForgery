@@ -19,6 +19,7 @@ from deepdocforgery.io import load_yaml
 from deepdocforgery.model import DeepDocForgeryModel
 from deepdocforgery.objectives import DeepDocForgeryCriterion
 from deepdocforgery.runtime import (
+    _as_byte_tensor,
     CosineEpochScheduler,
     atomic_torch_save,
     capture_rng_state,
@@ -459,7 +460,7 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         loader_generator = getattr(train_loader, "generator", None)
         saved_generator_state = checkpoint.get("data_generator_state")
         if loader_generator is not None and saved_generator_state is not None:
-            loader_generator.set_state(saved_generator_state)
+            loader_generator.set_state(_as_byte_tensor(saved_generator_state))
         _reconcile_metrics(output_dir / "metrics.jsonl", start_epoch)
         run.info(
             f"Resumed after epoch {start_epoch}/{epochs} from {resume_path.resolve()}",

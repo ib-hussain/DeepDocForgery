@@ -23,7 +23,11 @@ data/processed/
 data/*.zip
 
 # Generated artefacts (folder documentation such as output/README.md stays tracked)
-output/**/*.json
+# output/**/*.json
+output/logs/
+output/hpo/
+output/manifests/
+output/state/
 output/**/*.jsonl
 output/**/*.log
 output/**/*.yaml
@@ -48,3 +52,7 @@ temp/
 *.zip
 .git-credentials
 .github/.git-credentials
+
+model_today/manifests/*.jsonl
+
+*stress**/
