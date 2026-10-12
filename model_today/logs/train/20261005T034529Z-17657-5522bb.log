@@ -1,0 +1,10 @@
+03:45:29 | INFO    | STARTED
+03:45:29 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261005T034529Z-17657-5522bb.log
+03:45:30 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:45:31 | INFO    | CPU 2% | RAM 5.8/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G
+03:45:39 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+03:45:39 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+03:46:10 | INFO    | Model ready: 51,474,589 trainable parameters
+03:46:10 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+03:46:10 | ERROR   | FAILED: RNG state must be a torch.ByteTensor
+03:46:10 | ERROR   | FAILED | CPU 2% | RAM 5.8/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G

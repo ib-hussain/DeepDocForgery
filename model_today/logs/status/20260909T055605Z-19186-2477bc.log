@@ -1,0 +1,4 @@
+10:56:05 | INFO    | STARTED
+10:56:05 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/status/20260909T055605Z-19186-2477bc.log
+10:56:06 | INFO    | Status: 8 states, 0 training runs, 1 recovery commands
+10:56:06 | ERROR   | ATTENTION_REQUIRED | CPU 5% | RAM 4.6/31.0G | RSS 0.5G

@@ -1,0 +1,52 @@
+{
+  "checks": {
+    "config": "/mnt/d/Downloads/Repositories/deepFakeDetection/configs/cpu/sample.yaml",
+    "cuda_available": false,
+    "manifest": "/mnt/d/Downloads/Repositories/deepFakeDetection/output/manifests/cpu.jsonl",
+    "manifest_summary": {
+      "adn_supervision": {
+        "proxy": 282
+      },
+      "benchmarks": {
+        "doctamper-fcd": 3,
+        "doctamper-scd": 3,
+        "doctamper-testing": 3,
+        "doctamper-training": 3,
+        "midv-dm": 270
+      },
+      "classification_supervised": 270,
+      "datasets": {
+        "doctamper": 12,
+        "midv": 270
+      },
+      "degradation_supervised": 0,
+      "groups": 42,
+      "labels": {
+        "test": {
+          "0": 6,
+          "1": 57
+        },
+        "train": {
+          "0": 18,
+          "1": 146
+        },
+        "val": {
+          "0": 6,
+          "1": 49
+        }
+      },
+      "localization_supervised": 282,
+      "samples": 282,
+      "splits": {
+        "test": 63,
+        "train": 164,
+        "val": 55
+      }
+    },
+    "python_torch": "2.14.0+cpu"
+  },
+  "issues": [],
+  "profile": "cpu",
+  "report": "/mnt/d/Downloads/Repositories/deepFakeDetection/output/logs/doctor-cpu.json",
+  "status": "ok"
+}

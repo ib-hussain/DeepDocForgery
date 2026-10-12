@@ -1,0 +1,55 @@
+{
+  "command": "train",
+  "elapsed_seconds": 22268.066,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.jsonl",
+  "last_event": "evaluation_progress",
+  "message": "Validate 18/50: 1000/1737 batches | CPU 38% | RAM 17.9/31.0G | RSS 3.4G | VRAM 18.6/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.5/17.8/17.0G",
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 1028.0,
+      "system_percent": 37.9
+    },
+    "cuda": {
+      "allocated_gib": 2.458,
+      "device": 0,
+      "device_free_gib": 0.926,
+      "device_total_gib": 19.54,
+      "device_used_gib": 18.614,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 9913,
+            "used_vram_gib": 18.258
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 0.927,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 18.614,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 36.01,
+        "power_limit_w": 130.0,
+        "temperature_c": 57.0,
+        "utilization_percent": 0.0
+      },
+      "peak_allocated_gib": 17.022,
+      "reserved_gib": 17.766
+    },
+    "ram": {
+      "process_rss_gib": 3.433,
+      "system_available_gib": 13.153,
+      "system_percent": 57.6,
+      "system_total_gib": 31.029,
+      "system_used_gib": 17.876
+    }
+  },
+  "run_id": "20261012T050205Z-9913-c6732b",
+  "started_at": "2026-10-12T05:02:05+00:00",
+  "status": "running",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.log",
+  "updated_at": "2026-10-12T11:13:13+00:00"
+}

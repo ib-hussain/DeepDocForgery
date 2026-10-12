@@ -1,0 +1,6 @@
+08:10:34 | INFO    | STARTED
+08:10:34 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T031034Z-8338-53bb3f.log
+08:10:34 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+08:10:34 | INFO    | CPU 21% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 35C | alloc/reserved/peak 0.0/0.0/0.0G
+08:10:36 | ERROR   | INTERRUPTED: 
+08:10:36 | ERROR   | INTERRUPTED | CPU 21% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 35C | alloc/reserved/peak 0.0/0.0/0.0G

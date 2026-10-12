@@ -1,0 +1,9 @@
+14:52:43 | INFO    | STARTED
+14:52:43 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260915T095243Z-22157-667139.log
+14:52:43 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+14:52:43 | INFO    | CPU 20% | RAM 7.5/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 30% | temp 32C | alloc/reserved/peak 0.0/0.0/0.0G
+14:52:51 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+14:52:51 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+14:52:53 | INFO    | Model ready: 51,474,589 trainable parameters
+14:52:53 | INFO    | Training plan: epochs=40 | batch=40 | accumulation=4 | effective batch=160 | AMP=True
+14:52:53 | INFO    | Epoch 1/40 started

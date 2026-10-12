@@ -1,0 +1,6 @@
+08:10:18 | INFO    | STARTED
+08:10:18 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T031018Z-8126-15ae50.log
+08:10:18 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+08:10:18 | INFO    | CPU 21% | RAM 6.9/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 7% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G
+08:10:25 | ERROR   | FAILED: Missing dataset files: [PosixPath('/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper/DocTamperV1-TrainingSet/images/000000000.jpg'), PosixPath('/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper/DocTamperV1-TrainingSet/masks/000000000.png'), PosixPath('/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper/DocTamperV1-TrainingSet/images/000000001.jpg'), PosixPath('/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper/DocTamperV1-TrainingSet/masks/000000001.png'), PosixPath('/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda/doctamper/DocTamperV1-TrainingSet/images/000000003.jpg')]
+08:10:25 | ERROR   | FAILED | CPU 21% | RAM 6.9/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 7% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G

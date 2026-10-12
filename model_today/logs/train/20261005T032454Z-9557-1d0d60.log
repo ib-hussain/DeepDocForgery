@@ -1,0 +1,10 @@
+03:24:54 | INFO    | STARTED
+03:24:54 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261005T032454Z-9557-1d0d60.log
+03:24:56 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:24:56 | INFO    | CPU 6% | RAM 5.2/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G
+03:25:06 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+03:25:06 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+03:25:34 | INFO    | Model ready: 51,474,589 trainable parameters
+03:25:34 | INFO    | Training plan: epochs=40 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+03:25:39 | ERROR   | FAILED: Cannot resume with a changed total epoch count; start a documented fresh fine-tuning phase to avoid a learning-rate rebound
+03:25:39 | ERROR   | FAILED | CPU 6% | RAM 5.2/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G

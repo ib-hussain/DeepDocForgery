@@ -1,0 +1,40 @@
+03:56:49 | INFO    | STARTED
+03:56:49 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261005T035649Z-23712-5e0589.log
+03:56:49 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:56:49 | INFO    | CPU 14% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 2% | temp 30C | alloc/reserved/peak 0.0/0.0/0.0G
+03:56:57 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+03:56:57 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+03:56:58 | INFO    | Model ready: 51,474,589 trainable parameters
+03:56:58 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+03:56:59 | INFO    | Resumed after epoch 9/50 from /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt
+03:56:59 | INFO    | Epoch 10/50 started
+04:04:48 | ERROR   | FAILED: Caught SyntaxError in DataLoader worker process 9.
+Original Traceback (most recent call last):
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/torch/utils/data/_utils/worker.py", line 358, in _worker_loop
+    data = fetcher.fetch(index)  # type: ignore[possibly-undefined]
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/torch/utils/data/_utils/fetch.py", line 54, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/data.py", line 576, in __getitem__
+    upright, orientation = upright_image_copy(image_file)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/data.py", line 320, in upright_image_copy
+    orientation = exif_orientation(image)
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/data.py", line 311, in exif_orientation
+    value = int(image.getexif().get(EXIF_ORIENTATION_TAG, 1))
+                ^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/PIL/PngImagePlugin.py", line 1099, in getexif
+    self.load()
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/PIL/ImageFile.py", line 392, in load
+    s = read(read_bytes)
+        ^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/PIL/PngImagePlugin.py", line 1002, in load_read
+    cid, pos, length = self.png.read()
+                       ^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/lib/python3.12/site-packages/PIL/PngImagePlugin.py", line 184, in read
+    raise SyntaxError(msg)
+SyntaxError: broken PNG file (chunk b'\x00\x00\x00\x00')
+
+04:04:48 | ERROR   | FAILED | CPU 14% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 2% | temp 30C | alloc/reserved/peak 0.0/0.0/0.0G
