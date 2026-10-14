@@ -70,6 +70,6 @@ python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --o
 python -m deepdocforgery prepare --profile cuda && python -m deepdocforgery doctor --profile cuda &&  \
 python -m deepdocforgery hpo --config configs/cuda/full.yaml --search configs/cuda/hpo.yaml --device cuda &&  \
 python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full --resume 
-python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume 
+sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda && python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume 
 python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full --fresh
 ```
