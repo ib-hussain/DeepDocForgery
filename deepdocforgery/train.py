@@ -424,6 +424,14 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     max_consecutive_non_finite_steps = int(
         training.get("max_consecutive_non_finite_grad_steps", 20)
     )
+    consecutive_non_finite_loss_batches = 0
+    max_coEOFnsecutive_non_finite_loss_batches = int(
+        training.get("max_consecutive_non_finite_loss_batches", 5)
+    )
+    consecutive_non_finite_loss_batches = 0
+    max_consecutive_non_finite_loss_batches = int(
+        training.get("max_consecutive_non_finite_loss_batches", 5)
+    )
     if resume_path is not None:
         checkpoint = load_checkpoint(
             resume_path,
@@ -562,7 +570,30 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 losses = criterion(output, batch.supervision)
                 scaled_loss = losses["total"] / accumulation_steps
             if not bool(torch.isfinite(losses["total"])):
-                raise RuntimeError(f"Non-finite loss at epoch {epoch}, batch {batch_index}")
+                bad_samples = [
+                    {"sample_id": record.sample_id, "image": record.image}
+                    for record in batch.records
+                ]
+                consecutive_non_finite_loss_batches += 1
+                run.warning(
+                    f"Non-finite loss at epoch {epoch}, batch {batch_index}; skipping batch "
+                    f"({consecutive_non_finite_loss_batches}/"
+                    f"{max_consecutive_non_finite_loss_batches} consecutive)",
+                    event="non_finite_loss_skipped",
+                    epoch=epoch,
+                    batch=batch_index,
+                    consecutive_non_finite_loss_batches=consecutive_non_finite_loss_batches,
+                    samples=bad_samples,
+                )
+                if consecutive_non_finite_loss_batches >= max_consecutive_non_finite_loss_batches:
+                    raise RuntimeError(
+                        f"{consecutive_non_finite_loss_batches} consecutive non-finite-loss "
+                        f"batches through epoch {epoch}, batch {batch_index}; this is beyond "
+                        "an isolated bad sample and likely indicates real divergence "
+                        "(check learning rate, loss weights, or data)."
+                    )
+                continue
+            consecutive_non_finite_loss_batches = 0
             scaler.scale(scaled_loss).backward()
             processed_batches += 1
             should_step = processed_batches % accumulation_steps == 0

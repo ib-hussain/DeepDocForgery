@@ -1,5 +1,6 @@
 # Python / build / environments
 __pycache__/
+*.pt*
 *.py[cod]
 *cache/
 .venv*/
@@ -56,3 +57,4 @@ temp/
 model_today/manifests/*.jsonl
 
 *stress**/
+setup/running
