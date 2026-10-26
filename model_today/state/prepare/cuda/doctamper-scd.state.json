@@ -1,0 +1,11 @@
+{
+  "benchmark": "doctamper-scd",
+  "completed_items": 18000,
+  "contract": "cbbbbc9afe33070deaf75cf6a72db8e498081ed7bddd657729098ee69f2d1a8b",
+  "format_version": 1,
+  "records_path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-scd.records.jsonl",
+  "stage": "prepare/doctamper-scd",
+  "status": "completed",
+  "total_items": 18000,
+  "updated_at": "2026-09-09T06:34:19+00:00"
+}

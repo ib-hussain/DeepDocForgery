@@ -1,0 +1,63 @@
+{
+  "best_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/run/best.pt",
+  "best_metric": 0.14718011822605556,
+  "contract": "8c84ca13da908fe82553d4de40588be490b3a97542e9510215cf9d40e327c3d5",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T032607Z-23331-c31221.jsonl",
+  "last_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/run/last.pt",
+  "metrics_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/run/metrics.jsonl",
+  "output_dir": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/run",
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 35.6,
+      "system_percent": 4.0
+    },
+    "cuda": {
+      "allocated_gib": 1.42,
+      "device": 0,
+      "device_free_gib": 1.214,
+      "device_total_gib": 19.54,
+      "device_used_gib": 18.325,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 23240,
+            "used_vram_gib": 0.156
+          },
+          {
+            "name": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python",
+            "pid": 23331,
+            "used_vram_gib": 17.645
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 1.215,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 18.326,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 35.79,
+        "power_limit_w": 130.0,
+        "temperature_c": 56.0,
+        "utilization_percent": 9.0
+      },
+      "peak_allocated_gib": 16.822,
+      "reserved_gib": 17.154
+    },
+    "ram": {
+      "process_rss_gib": 1.143,
+      "system_available_gib": 26.682,
+      "system_percent": 14.0,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.347
+    }
+  },
+  "resume_from": null,
+  "resumed": false,
+  "selection_metric": "pixel_macro/f1_forged",
+  "status": "ok",
+  "status_report": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/hpo/study-c50fc0c4111f/trial-000/run/status.json",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T032607Z-23331-c31221.log"
+}

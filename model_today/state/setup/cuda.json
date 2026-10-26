@@ -1,0 +1,11 @@
+{
+  "completed_step": "completed",
+  "contract": "cuda",
+  "environment": "/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda",
+  "format_version": 1,
+  "resume_command": "bash setup/cuda.sh",
+  "stage": "setup/cuda",
+  "status": "completed",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/setup/cuda-20260908T102913Z-12387.log",
+  "updated_at": "2026-09-08T10:36:19+00:00"
+}

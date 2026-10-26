@@ -1,0 +1,11 @@
+{
+  "benchmark": "midv-dm",
+  "completed_items": 9000,
+  "contract": "ef8e820f72bdb8a87757d985e511f003c18b47a9675c08ad4cbf6acb1494bc94",
+  "format_version": 1,
+  "records_path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/midv-dm.records.jsonl",
+  "stage": "prepare/midv-dm",
+  "status": "completed",
+  "total_items": 9000,
+  "updated_at": "2026-09-09T06:50:01+00:00"
+}

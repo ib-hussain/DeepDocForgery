@@ -1,0 +1,31 @@
+{
+  "contract": "4d02d4cfbaf189f07176717445bb88beaaea457b177a8f7972a86aec042064ed",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T061525Z-31968-474514.jsonl",
+  "format_version": 1,
+  "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+  "manifest_sha256": "e591e5a807d93d0b195255003936def718fa91e6059d1fa8c8f1e0d31cedf74a",
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 56.9,
+      "system_percent": 3.6
+    },
+    "ram": {
+      "process_rss_gib": 0.413,
+      "system_available_gib": 26.953,
+      "system_percent": 13.1,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.075
+    }
+  },
+  "resume_command": "python -m deepdocforgery prepare --profile cuda --seed 7 --validation-fraction 0.15 --midv-test-fraction 0.15 --workers auto --checkpoint-interval 1000 --log-dir output/logs",
+  "resume_enabled": true,
+  "run_id": "20260909T061525Z-31968-474514",
+  "samples": 179000,
+  "stage": "prepare/cuda",
+  "status": "completed",
+  "summary": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.summary.json",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T061525Z-31968-474514.log",
+  "updated_at": "2026-09-09T06:50:05+00:00"
+}

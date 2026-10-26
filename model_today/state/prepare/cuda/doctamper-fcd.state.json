@@ -1,0 +1,11 @@
+{
+  "benchmark": "doctamper-fcd",
+  "completed_items": 2000,
+  "contract": "ba0a1f122f0b8a95b7c0129d3edfbc5980bd0391779b0bd70e8aa25146a4988c",
+  "format_version": 1,
+  "records_path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-fcd.records.jsonl",
+  "stage": "prepare/doctamper-fcd",
+  "status": "completed",
+  "total_items": 2000,
+  "updated_at": "2026-09-09T06:31:58+00:00"
+}

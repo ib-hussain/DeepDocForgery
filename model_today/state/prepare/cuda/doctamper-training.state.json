@@ -1,0 +1,11 @@
+{
+  "benchmark": "doctamper-training",
+  "completed_items": 120000,
+  "contract": "35d5f19c9961fc9e067ffaedfa47adb25453e49cee090f8b4b93291de1b38c47",
+  "format_version": 1,
+  "records_path": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/doctamper-training.records.jsonl",
+  "stage": "prepare/doctamper-training",
+  "status": "completed",
+  "total_items": 120000,
+  "updated_at": "2026-09-09T06:27:58+00:00"
+}
