@@ -1,0 +1,11 @@
+08:21:27 | INFO    | STARTED
+08:21:27 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T032127Z-17816-7a0c62.log
+08:21:28 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+08:21:28 | INFO    | CPU 17% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.8/19.5G | GPU 2% | temp 59C | alloc/reserved/peak 0.0/0.0/0.0G
+08:21:35 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+08:21:35 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+08:21:37 | INFO    | Model ready: 51,474,589 trainable parameters
+08:21:37 | INFO    | Training plan: epochs=5 | batch=12 | accumulation=4 | effective batch=48 | AMP=True
+08:21:37 | INFO    | Epoch 1/5 started
+08:23:06 | ERROR   | FAILED: CUDA out of memory. Tried to allocate 384.00 MiB. GPU 0 has a total capacity of 19.54 GiB of which 186.12 MiB is free. Process 10503 has 160.00 MiB memory in use. Including non-PyTorch memory, this process has 18.71 GiB memory in use. Of the allocated memory 17.64 GiB is allocated by PyTorch, and 594.55 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+08:23:06 | ERROR   | FAILED | CPU 17% | RAM 6.3/31.0G | RSS 0.5G | VRAM 0.8/19.5G | GPU 2% | temp 59C | alloc/reserved/peak 0.0/0.0/0.0G

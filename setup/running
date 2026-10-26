@@ -1,4 +1,4 @@
 bash temp/max_performance.sh && \
 sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda && \
-python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda \
---output output/model/cuda-full --resume 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train \
+  --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume

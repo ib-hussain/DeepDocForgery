@@ -1,55 +1,55 @@
 {
   "command": "train",
-  "elapsed_seconds": 22268.066,
-  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.jsonl",
-  "last_event": "evaluation_progress",
-  "message": "Validate 18/50: 1000/1737 batches | CPU 38% | RAM 17.9/31.0G | RSS 3.4G | VRAM 18.6/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.5/17.8/17.0G",
+  "duration_seconds": 5468.305,
+  "error": "CUDA out of memory. Tried to allocate 22.00 MiB. GPU 0 has a total capacity of 19.54 GiB of which 21.06 MiB is free. Including non-PyTorch memory, this process has 19.05 GiB memory in use. Of the allocated memory 18.50 GiB is allocated by PyTorch, and 55.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+  "error_type": "OutOfMemoryError",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261026T033246Z-7850-c03172.jsonl",
+  "finished_at": "2026-10-26T05:03:54+00:00",
   "resources": {
     "cpu": {
       "logical": 28,
       "physical": 20,
-      "process_percent": 1028.0,
-      "system_percent": 37.9
+      "process_percent": 100.3,
+      "system_percent": 15.7
     },
     "cuda": {
-      "allocated_gib": 2.458,
+      "allocated_gib": 1.587,
       "device": 0,
-      "device_free_gib": 0.926,
+      "device_free_gib": 1.138,
       "device_total_gib": 19.54,
-      "device_used_gib": 18.614,
+      "device_used_gib": 18.402,
       "name": "NVIDIA RTX 4000 Ada Generation",
       "nvidia_smi": {
         "compute_processes": [
           {
             "name": "python",
-            "pid": 9913,
-            "used_vram_gib": 18.258
+            "pid": 7850,
+            "used_vram_gib": 17.93
           }
         ],
         "index": 0,
-        "memory_free_gib": 0.927,
+        "memory_free_gib": 1.139,
         "memory_total_gib": 19.995,
-        "memory_used_gib": 18.614,
+        "memory_used_gib": 18.402,
         "name": "NVIDIA RTX 4000 Ada Generation",
-        "power_draw_w": 36.01,
+        "power_draw_w": 113.17,
         "power_limit_w": 130.0,
-        "temperature_c": 57.0,
-        "utilization_percent": 0.0
+        "temperature_c": 75.0,
+        "utilization_percent": 100.0
       },
-      "peak_allocated_gib": 17.022,
-      "reserved_gib": 17.766
+      "peak_allocated_gib": 16.897,
+      "reserved_gib": 17.439
     },
     "ram": {
-      "process_rss_gib": 3.433,
-      "system_available_gib": 13.153,
-      "system_percent": 57.6,
+      "process_rss_gib": 3.177,
+      "system_available_gib": 13.043,
+      "system_percent": 58.0,
       "system_total_gib": 31.029,
-      "system_used_gib": 17.876
+      "system_used_gib": 17.985
     }
   },
-  "run_id": "20261012T050205Z-9913-c6732b",
-  "started_at": "2026-10-12T05:02:05+00:00",
-  "status": "running",
-  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.log",
-  "updated_at": "2026-10-12T11:13:13+00:00"
+  "run_id": "20261026T033246Z-7850-c03172",
+  "started_at": "2026-10-26T03:32:46+00:00",
+  "status": "failed",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261026T033246Z-7850-c03172.log"
 }

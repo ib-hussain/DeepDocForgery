@@ -1,0 +1,55 @@
+09:52:52 | INFO    | STARTED
+09:52:52 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260916T045252Z-93992-cb8c71.log
+09:53:03 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+09:53:03 | INFO    | CPU 1% | RAM 4.0/31.0G | RSS 0.5G | VRAM 0.8/19.5G | GPU 7% | temp 49C | alloc/reserved/peak 0.0/0.0/0.0G
+09:53:10 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+09:53:10 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+09:53:13 | INFO    | Model ready: 51,474,589 trainable parameters
+09:53:13 | INFO    | Training plan: epochs=5 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+09:53:13 | INFO    | Epoch 1/5 started
+09:55:54 | INFO    | Epoch 1: 100/400 batches | loss=2.5817 | CPU 14% | RAM 17.1/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 75C | alloc/reserved/peak 1.4/17.2/16.8G
+09:57:22 | INFO    | Epoch 1: 200/400 batches | loss=2.4305 | CPU 15% | RAM 16.6/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 91% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+09:58:51 | INFO    | Epoch 1: 300/400 batches | loss=2.3567 | CPU 15% | RAM 16.9/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 95% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:00:20 | INFO    | Epoch 1: 400/400 batches | loss=2.3143 | CPU 16% | RAM 17.3/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:02:28 | INFO    | Validate 1/5: 100/100 batches | CPU 44% | RAM 15.0/31.0G | RSS 3.4G | VRAM 18.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.3/17.2/16.8G
+10:02:32 | INFO    | New best checkpoint: pixel_macro/f1_forged=0.025687
+10:02:32 | INFO    | Last checkpoint saved
+10:02:32 | INFO    | Epoch 1/5 complete | train loss=2.3143 | pixel_macro/f1_forged=0.025687 | P/R=0.0783/0.0322 | catastrophic=0.9182 | best=0.025687
+10:02:32 | INFO    | Epoch 2/5 started
+10:04:06 | INFO    | Epoch 2: 100/400 batches | loss=2.0826 | CPU 22% | RAM 16.4/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 75C | alloc/reserved/peak 1.4/17.2/16.8G
+10:05:35 | INFO    | Epoch 2: 200/400 batches | loss=2.0812 | CPU 15% | RAM 16.6/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:07:04 | INFO    | Epoch 2: 300/400 batches | loss=2.0972 | CPU 15% | RAM 16.9/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 95% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:07:11 | WARNING | Non-finite gradient at epoch 1, batch 307 (scaler backing off scale; 1/20 consecutive)
+10:08:33 | INFO    | Epoch 2: 400/400 batches | loss=2.0631 | CPU 15% | RAM 16.8/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:10:54 | INFO    | Validate 2/5: 100/100 batches | CPU 43% | RAM 15.1/31.0G | RSS 3.4G | VRAM 18.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.3/17.2/16.8G
+10:10:57 | INFO    | New best checkpoint: pixel_macro/f1_forged=0.111057
+10:10:57 | INFO    | Last checkpoint saved
+10:10:57 | INFO    | Epoch 2/5 complete | train loss=2.0631 | pixel_macro/f1_forged=0.111057 | P/R=0.1658/0.1890 | catastrophic=0.6573 | best=0.111057
+10:10:57 | INFO    | Epoch 3/5 started
+10:12:34 | INFO    | Epoch 3: 100/400 batches | loss=1.9527 | CPU 22% | RAM 16.1/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:14:03 | WARNING | Non-finite gradient at epoch 2, batch 199 (scaler backing off scale; 1/20 consecutive)
+10:14:03 | INFO    | Epoch 3: 200/400 batches | loss=1.9092 | CPU 15% | RAM 16.2/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 78C | alloc/reserved/peak 1.4/17.2/16.8G
+10:15:31 | INFO    | Epoch 3: 300/400 batches | loss=1.8982 | CPU 15% | RAM 16.5/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 99% | temp 77C | alloc/reserved/peak 1.5/17.2/16.8G
+10:17:00 | INFO    | Epoch 3: 400/400 batches | loss=1.8906 | CPU 15% | RAM 16.2/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:19:15 | INFO    | Validate 3/5: 100/100 batches | CPU 39% | RAM 15.3/31.0G | RSS 3.4G | VRAM 18.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.3/17.2/16.8G
+10:19:19 | INFO    | New best checkpoint: pixel_macro/f1_forged=0.147252
+10:19:19 | INFO    | Last checkpoint saved
+10:19:19 | INFO    | Epoch 3/5 complete | train loss=1.8906 | pixel_macro/f1_forged=0.147252 | P/R=0.1874/0.2625 | catastrophic=0.5773 | best=0.147252
+10:19:19 | INFO    | Epoch 4/5 started
+10:20:56 | INFO    | Epoch 4: 100/400 batches | loss=1.8628 | CPU 22% | RAM 15.7/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:22:25 | INFO    | Epoch 4: 200/400 batches | loss=1.8225 | CPU 16% | RAM 16.4/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:23:54 | INFO    | Epoch 4: 300/400 batches | loss=1.8046 | CPU 15% | RAM 16.3/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:25:22 | INFO    | Epoch 4: 400/400 batches | loss=1.7766 | CPU 15% | RAM 16.8/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:27:28 | INFO    | Validate 4/5: 100/100 batches | CPU 44% | RAM 15.1/31.0G | RSS 3.4G | VRAM 18.3/19.5G | GPU 3% | temp 57C | alloc/reserved/peak 2.3/17.2/16.8G
+10:27:30 | INFO    | Last checkpoint saved
+10:27:30 | INFO    | Epoch 4/5 complete | train loss=1.7766 | pixel_macro/f1_forged=0.119050 | P/R=0.3075/0.1278 | catastrophic=0.6964 | best=0.147252
+10:27:30 | INFO    | Epoch 5/5 started
+10:29:08 | INFO    | Epoch 5: 100/400 batches | loss=1.6975 | CPU 22% | RAM 16.2/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 95% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:30:37 | INFO    | Epoch 5: 200/400 batches | loss=1.6993 | CPU 15% | RAM 16.0/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:32:06 | INFO    | Epoch 5: 300/400 batches | loss=1.6750 | CPU 14% | RAM 16.2/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 95% | temp 77C | alloc/reserved/peak 1.4/17.2/16.8G
+10:33:34 | INFO    | Epoch 5: 400/400 batches | loss=1.6599 | CPU 14% | RAM 16.5/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 76C | alloc/reserved/peak 1.4/17.2/16.8G
+10:35:46 | INFO    | Validate 5/5: 100/100 batches | CPU 41% | RAM 15.3/31.0G | RSS 3.4G | VRAM 18.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 2.3/17.2/16.8G
+10:35:49 | INFO    | New best checkpoint: pixel_macro/f1_forged=0.149271
+10:35:49 | INFO    | Last checkpoint saved
+10:35:51 | INFO    | Epoch 5/5 complete | train loss=1.6599 | pixel_macro/f1_forged=0.149271 | P/R=0.2367/0.2335 | catastrophic=0.5909 | best=0.149271
+10:35:51 | INFO    | SUCCEEDED | CPU 4% | RAM 6.4/31.0G | RSS 3.1G | VRAM 18.3/19.5G | GPU 9% | temp 56C | alloc/reserved/peak 1.4/17.2/16.8G

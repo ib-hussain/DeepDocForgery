@@ -1,0 +1,27 @@
+STARTED | CUDA setup | 2026-09-08T10:28:59Z
+Log: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/setup/cuda-20260908T102859Z-12290.log
+Tue Sep  8 15:29:00 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.173.02             Driver Version: 580.173.02     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA RTX 4000 Ada Gene...    Off |   00000000:01:00.0  On |                  Off |
+| 30%   25C    P8              7W /  130W |     374MiB /  20475MiB |      7%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            2623      G   /usr/lib/xorg/Xorg                      103MiB |
+|    0   N/A  N/A            2992      G   /usr/bin/gnome-shell                    113MiB |
+|    0   N/A  N/A            3580      G   ...exec/xdg-desktop-portal-gnome          3MiB |
+|    0   N/A  N/A           10748      G   ...rack-uuid=3190708988185955192         85MiB |
++-----------------------------------------------------------------------------------------+
+Cannot clear the active environment /home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda; run 'deactivate' first.
+FAILED | CUDA setup | exit=2 | 2026-09-08T10:29:00Z

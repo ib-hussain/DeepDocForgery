@@ -1,70 +1,56 @@
 {
   "command": "train",
-  "compute": {
-    "logical_cpus": 28,
-    "physical_cpus": 20,
-    "thread_environment": {
-      "BLIS_NUM_THREADS": "28",
-      "MKL_NUM_THREADS": "28",
-      "NUMEXPR_NUM_THREADS": "28",
-      "OMP_NUM_THREADS": "28",
-      "OPENBLAS_NUM_THREADS": "28",
-      "VECLIB_MAXIMUM_THREADS": "28"
-    },
-    "torch_interop_threads": 4,
-    "torch_threads": 28
-  },
-  "contract": "cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1",
-  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261021T033646Z-8491-328faa.jsonl",
-  "output_dir": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full",
+  "error": "CUDA out of memory. Tried to allocate 22.00 MiB. GPU 0 has a total capacity of 19.54 GiB of which 21.06 MiB is free. Including non-PyTorch memory, this process has 19.05 GiB memory in use. Of the allocated memory 18.50 GiB is allocated by PyTorch, and 55.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+  "error_type": "OutOfMemoryError",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261026T033246Z-7850-c03172.jsonl",
+  "last_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt",
   "resources": {
     "cpu": {
       "logical": 28,
       "physical": 20,
-      "process_percent": 45.2,
-      "system_percent": 2.4
+      "process_percent": 100.3,
+      "system_percent": 15.7
     },
     "cuda": {
-      "allocated_gib": 0.0,
+      "allocated_gib": 1.587,
       "device": 0,
-      "device_free_gib": 18.802,
+      "device_free_gib": 1.138,
       "device_total_gib": 19.54,
-      "device_used_gib": 0.737,
+      "device_used_gib": 18.402,
       "name": "NVIDIA RTX 4000 Ada Generation",
       "nvidia_smi": {
         "compute_processes": [
           {
             "name": "python",
-            "pid": 8491,
-            "used_vram_gib": 0.156
+            "pid": 7850,
+            "used_vram_gib": 17.93
           }
         ],
         "index": 0,
-        "memory_free_gib": 18.803,
+        "memory_free_gib": 1.139,
         "memory_total_gib": 19.995,
-        "memory_used_gib": 0.738,
+        "memory_used_gib": 18.402,
         "name": "NVIDIA RTX 4000 Ada Generation",
-        "power_draw_w": 14.32,
+        "power_draw_w": 113.17,
         "power_limit_w": 130.0,
-        "temperature_c": 26.0,
-        "utilization_percent": 39.0
+        "temperature_c": 75.0,
+        "utilization_percent": 100.0
       },
-      "peak_allocated_gib": 0.0,
-      "reserved_gib": 0.0
+      "peak_allocated_gib": 16.897,
+      "reserved_gib": 17.439
     },
     "ram": {
-      "process_rss_gib": 0.49,
-      "system_available_gib": 25.981,
-      "system_percent": 16.3,
+      "process_rss_gib": 3.177,
+      "system_available_gib": 13.043,
+      "system_percent": 58.0,
       "system_total_gib": 31.029,
-      "system_used_gib": 5.048
+      "system_used_gib": 17.985
     }
   },
   "resume_command": "python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full --log-dir output/logs",
-  "resume_from": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt",
-  "run_id": "20261021T033646Z-8491-328faa",
-  "started_at": "2026-10-21T03:36:46+00:00",
-  "status": "running",
-  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261021T033646Z-8491-328faa.log",
-  "updated_at": "2026-10-21T03:36:48+00:00"
+  "run_id": "20261026T033246Z-7850-c03172",
+  "started_at": "2026-10-26T03:32:46+00:00",
+  "status": "failed",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261026T033246Z-7850-c03172.log",
+  "updated_at": "2026-10-26T05:03:54+00:00"
 }

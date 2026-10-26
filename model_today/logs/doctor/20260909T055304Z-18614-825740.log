@@ -1,0 +1,10 @@
+10:53:04 | INFO    | STARTED
+10:53:04 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T055304Z-18614-825740.log
+10:53:05 | INFO    | Doctor profile=cuda | config=configs/cuda/full.yaml | CPU threads=28
+10:53:05 | INFO    | CPU 18% | RAM 4.7/31.0G | RSS 0.6G | VRAM 0.5/19.5G | GPU 24% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G
+10:53:05 | INFO    | Previous doctor state found; volatile checks will be refreshed
+10:53:05 | INFO    | Runtime check: passed
+10:53:05 | INFO    | Dependency check: passed
+10:53:13 | INFO    | Manifest check: passed
+10:53:13 | INFO    | Protocol check: passed
+10:53:13 | INFO    | SUCCEEDED | CPU 4% | RAM 4.9/31.0G | RSS 0.8G | VRAM 0.5/19.5G | GPU 1% | temp 35C | alloc/reserved/peak 0.0/0.0/0.0G

@@ -1,0 +1,20 @@
+09:26:34 | INFO    | STARTED
+09:26:34 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261019T092634Z-163180-c4dff3.log
+09:26:34 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+09:26:34 | INFO    | CPU 16% | RAM 5.9/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 30C | alloc/reserved/peak 0.0/0.0/0.0G
+09:26:41 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+09:26:41 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+09:27:05 | INFO    | Model ready: 51,474,589 trainable parameters
+09:27:05 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+09:27:05 | INFO    | Resumed after epoch 32/50 from /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt
+09:27:05 | INFO    | Epoch 33/50 started
+09:42:55 | INFO    | Epoch 33: 1000/9853 batches | loss=0.7991 | CPU 15% | RAM 18.3/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 1.6/17.3/17.0G
+09:53:49 | WARNING | Non-finite gradient at epoch 32, batch 1743 (scaler backing off scale; 1/20 consecutive)
+09:54:32 | WARNING | Non-finite gradient at epoch 32, batch 1791 (scaler backing off scale; 1/20 consecutive)
+09:57:34 | INFO    | Epoch 33: 2000/9853 batches | loss=0.7995 | CPU 16% | RAM 18.3/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 75C | alloc/reserved/peak 1.6/17.3/17.0G
+10:12:14 | INFO    | Epoch 33: 3000/9853 batches | loss=0.8023 | CPU 16% | RAM 18.6/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 1.6/17.3/17.0G
+10:26:53 | INFO    | Epoch 33: 4000/9853 batches | loss=0.8022 | CPU 16% | RAM 18.6/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 1.6/17.3/17.0G
+10:41:32 | INFO    | Epoch 33: 5000/9853 batches | loss=0.8006 | CPU 16% | RAM 18.9/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 1.6/17.3/17.0G
+10:54:48 | WARNING | Non-finite loss at epoch 32, batch 5905; skipping batch (1/5 consecutive)
+10:54:49 | ERROR   | FAILED: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 19.54 GiB of which 37.75 MiB is free. Including non-PyTorch memory, this process has 18.99 GiB memory in use. Of the allocated memory 18.48 GiB is allocated by PyTorch, and 22.78 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+10:54:49 | ERROR   | FAILED | CPU 16% | RAM 18.9/31.0G | RSS 3.2G | VRAM 18.3/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 1.6/17.3/17.0G
