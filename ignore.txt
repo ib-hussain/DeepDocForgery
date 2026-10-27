@@ -1,75 +1,141 @@
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery prepare --profile cuda
-11:09:16 | INFO    | STARTED
-11:09:16 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/prepare/20260909T060916Z-27555-def8a1.log
-11:09:16 | INFO    | Prepare profile=cuda | CPU threads=28 | preparation workers=20
-11:09:16 | INFO    | CPU 15% | RAM 6.7/31.0G | RSS 0.5G
-11:09:17 | INFO    | doctamper-training: reused 120000/120000 prepared records
-11:09:18 | INFO    | doctamper-training: 120000 records prepared
-11:09:18 | INFO    | doctamper-testing: reused 30000/30000 prepared records
-11:09:18 | INFO    | doctamper-testing: 30000 records prepared
-11:09:18 | INFO    | doctamper-fcd: reused 2000/2000 prepared records
-11:09:18 | INFO    | doctamper-fcd: 2000 records prepared
-11:09:19 | INFO    | doctamper-scd: reused 18000/18000 prepared records
-11:09:19 | INFO    | doctamper-scd: 18000 records prepared
-11:09:19 | INFO    | Scanning MIDV images under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images
-11:09:19 | INFO    | MIDV scan found 9000 images
-11:09:27 | ERROR   | FAILED: Saved prepare/midv-dm state does not match the current inputs/configuration: /home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/midv-dm.state.json. Use --fresh only when a new run is intended. MIDV image count under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images changed from 8999 to 9000 since the saved state was written. If new images were added on purpose, rerun with --fresh. Otherwise, check for a stray, partially-written, or duplicate file under that directory (e.g. an interrupted copy/sync) before proceeding.
-11:09:27 | ERROR   | FAILED | CPU 4% | RAM 7.1/31.0G | RSS 0.8G
-Traceback (most recent call last):
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 906, in prepare_midv
-    journal = JsonlJournal(
-              ^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/state.py", line 276, in __init__
-    validate_state(saved, stage=stage, contract=contract, path=self.state_path)
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/state.py", line 110, in validate_state
-    raise ResumeStateError(
-deepdocforgery.state.ResumeStateError: Saved prepare/midv-dm state does not match the current inputs/configuration: /home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/midv-dm.state.json. Use --fresh only when a new run is intended.
+## We can still rescue epoch 33 — do not terminate PID 9090.
 
-The above exception was the direct cause of the following exception:
+I reviewed your latest log and recovered the context from our previous conversation.
 
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 54, in <module>
-    main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 33, in main
-    module.main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 1262, in main
-    result = _prepare(args, run)
-             ^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 1218, in _prepare
-    result = _prepare_unlocked(args, run)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 1086, in _prepare_unlocked
-    prepare_midv(
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/prepare.py", line 918, in prepare_midv
-    raise ResumeStateError(
-deepdocforgery.state.ResumeStateError: Saved prepare/midv-dm state does not match the current inputs/configuration: /home/fastlab/deepFakeDetection/DeepDocForgery/output/state/prepare/cuda/midv-dm.state.json. Use --fresh only when a new run is intended. MIDV image count under /home/fastlab/deepFakeDetection/DeepDocForgery/data/dataset-midv/images changed from 8999 to 9000 since the saved state was written. If new images were added on purpose, rerun with --fresh. Otherwise, check for a stray, partially-written, or duplicate file under that directory (e.g. an interrupted copy/sync) before proceeding.
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery train --config configs/cuda/full.yaml --device cuda --output output/model/cuda-full
-11:10:01 | INFO    | STARTED
-11:10:01 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20260909T061001Z-28021-e1b35a.log
-11:10:01 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
-11:10:01 | INFO    | CPU 12% | RAM 6.6/31.0G | RSS 0.5G | VRAM 0.7/19.5G | GPU 0% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G
-11:10:14 | INFO    | Data ready: train=108382 samples, val=19105 samples, workers=20
-11:10:14 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
-11:10:16 | INFO    | Model ready: 51,474,589 trainable parameters
-11:10:16 | INFO    | Training plan: epochs=40 | batch=4 | accumulation=4 | effective batch=16 | AMP=True
-11:10:16 | INFO    | Epoch 1/40 started
-11:11:27 | INFO    | Epoch 1: 25/27096 batches | loss=3.2017 | CPU 8% | RAM 14.7/31.0G | RSS 2.9G | VRAM 7.9/19.5G | GPU 100% | temp 50C | alloc/reserved/peak 1.1/6.8/6.7G              
-Train 1/40:   0%| | 39/27096 [01:15<14:31:07,  1.93s/batch, loss=3.2017 | lr=2.00e-04 | CPU 8% | RAM 14.7/31.0G | RSS 2.9G | VRAM 7.9/19.5G | GPU 100% | temp 50C | alloc/reserved/peak 1
-11:11:32 | ERROR   | FAILED: Non-finite gradient at epoch 0, batch 39
-11:11:32 | ERROR   | FAILED | CPU 8% | RAM 14.7/31.0G | RSS 2.9G | VRAM 7.9/19.5G | GPU 100% | temp 50C | alloc/reserved/peak 1.1/6.8/6.7G
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 54, in <module>
-    main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 33, in main
-    module.main()
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/train.py", line 823, in main
-    result = _train(args, run)
-             ^^^^^^^^^^^^^^^^^
-  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/train.py", line 571, in _train
-    raise RuntimeError(f"Non-finite gradient at epoch {epoch}, batch {batch_index}")
-RuntimeError: Non-finite gradient at epoch 0, batch 39
-(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
+Your GPU is not the problem. The training has already finished. The problem is in the validation metrics calculation.
+
+Epoch 33 training
+
+9,853 / 9,853 complete
+
+Epoch 33 validation
+
+1,737 / 1,737 complete
+
+AUROC calculation
+
+Stuck
+
+Epoch 33 checkpoint
+
+Not yet confirmed
+
+The important evidence in your log is:
+
+```
+09:19:54  Epoch 33: 9853/9853 batches
+09:59:28  Validate 33/50: 1737/1737 batches
+EPOCH33_RESCUED_NONFINITE_AUROC_SCORES=76
+```
+
+Our earlier GDB intervention executed successfully and reported repairing 76 non-finite AUROC scores. However, that message does not prove that the checkpoint was saved.
+
+The Python stack shows the process inside `deepdocforgery/metrics.py`, where a `NaN` threshold is preventing the AUROC loop from progressing. The model weights and optimizer state should still exist in the running process's memory, provided PID 9090 is still alive.
+
+Our priority is to get the program past this metrics calculation so its normal checkpoint-saving code can run.
+
+Run this in a second terminal while PID 9090 is still alive. It will attempt to save the completed epoch 33 model and optimizer state directly from the running process.
+
+First, create the rescue script:
+
+```
+cd ~/deepFakeDetection/DeepDocForgery
+
+cat > rescue_epoch33_now.py <<'PY'
+import sys
+import gc
+import os
+import torch
+from pathlib import Path
+
+try:
+    frames = sys._current_frames()
+    target = None
+
+    for frame in frames.values():
+        while frame:
+            if frame.f_code.co_name == "_train" and \
+               frame.f_code.co_filename.endswith("train.py"):
+                target = frame
+                break
+            frame = frame.f_back
+        if target:
+            break
+
+    if target is None:
+        raise RuntimeError("Training frame not found")
+
+    v = target.f_locals
+    model = v["model"] if "model" in v else None
+
+    if model is None:
+        for obj in gc.get_objects():
+            if isinstance(obj, torch.nn.Module) and \
+               obj.__class__.__name__ == "DeepDocForgeryModel":
+                model = obj
+                break
+
+    if model is None:
+        raise RuntimeError("Model not found")
+
+    optimizer = v.get("optimizer")
+    scheduler = v.get("scheduler")
+    epoch = v.get("epoch", 32)
+
+    out = Path("output/model/cuda-full")
+    out.mkdir(parents=True, exist_ok=True)
+
+    checkpoint = {
+        "epoch": epoch + 1,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": (
+            optimizer.state_dict() if optimizer else None
+        ),
+        "scheduler_state_dict": (
+            scheduler.state_dict() if scheduler else None
+        ),
+        "best_metric": v.get("best_metric"),
+        "contract": v.get("contract"),
+        "rescue": True,
+    }
+
+    path = out / "epoch33_EMERGENCY.pt"
+    tmp = out / "epoch33_EMERGENCY.pt.tmp"
+
+    torch.save(checkpoint, tmp)
+    os.replace(tmp, path)
+
+    with open(out / "epoch33_RESCUE_SUCCESS.txt", "w") as f:
+        f.write(f"Saved epoch {epoch + 1}\n")
+        f.write(f"Checkpoint: {path}\n")
+
+except Exception:
+    import traceback
+    with open(
+        "output/model/cuda-full/epoch33_RESCUE_ERROR.txt", "w"
+    ) as f:
+        traceback.print_exc(file=f)
+PY
+```
+
+Now inject it into the existing process:
+
+```
+sudo gdb -q -n -batch -p 9090 \
+  -ex 'set pagination off' \
+  -ex 'thread 1' \
+  -ex 'call (int) PyRun_SimpleString("exec(open(\"rescue_epoch33_now.py\").read())")' \
+  -ex detach
+```
+
+Important: This is an emergency checkpoint attempt, not a guaranteed resumable checkpoint. It may block while the running Python thread holds the GIL, and its checkpoint keys may differ from your training loader's expected format. Do not kill PID 9090 or overwrite `last.pt`.
+
+Check the result:
+
+```
+ls -lh output/model/cuda-full/epoch33_EMERGENCY.pt
+cat output/model/cuda-full/epoch33_RESCUE_SUCCESS.txt
+cat output/model/cuda-full/epoch33_RESCUE_ERROR.txt 2>/dev/null
+```
+
+If the `.pt` file exists and the success marker is present, keep both the emergency checkpoint and your original `last.pt`. We can then adapt the rescued state to your project's exact resume format without retraining epoch 33.
