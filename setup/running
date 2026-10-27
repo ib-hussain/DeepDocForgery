@@ -1,7 +1,304 @@
 bash temp/max_performance.sh && \
 sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda && \
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train \
-  --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train && 
+--config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
+
+
+
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ sudo env "PATH=$PATH" py-spy dump --pid 9090 --locals
+Process 9090: python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
+Python v3.12.3 (/usr/bin/python3.12)
+
+Thread 9090 (active+gil): "MainThread"
+    binary_auroc (deepdocforgery/metrics.py:40)
+        Arguments:
+            scores: <cell at 0x780a41f93610>
+            labels: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...]
+        Locals:
+            positives: 1120
+            negatives: 140
+            order: [269, 270, 11, 81, 72, 82, 108, 113, 125, 74, 6, 0, 3, 1, 16, 19, 2, 14, 15, 18, 5, 17, 4, 9, 13, 8, 10, 7, 12, 20, 32, ...]
+            true_positive: 2
+            false_positive: 27
+            previous_tpr: 0.0017857142857142857
+            previous_fpr: 0.19285714285714287
+            area: 0.0003443877551020408
+            index: 29
+            threshold: NaN
+            label: 0
+            tpr: 0.0017857142857142857
+            fpr: 0.19285714285714287
+    compute (deepdocforgery/metrics.py:339)
+        Arguments:
+            self: <cell at 0x780a41f30f70>
+        Locals:
+            micro: {"pixel_micro/precision": 0.8153156475042174, "pixel_micro/recall": 0.7510397493493711, ...}
+            result: {"pixel_micro/precision": 0.8153156475042174, "pixel_micro/recall": 0.7510397493493711, ...}
+            metric: "accuracy"
+            total: 4863754240
+            positives: 94005589
+            background_accuracy: 0.9806722164892937
+            bucket: "ge_10pct"
+            values: [0, 0.8414820171523486, 0.9614571654382708, 0.8841685277659281, 0.8083540594869, 0.9108342532723546, 0.8791986708723604, ...]
+    evaluate_model (deepdocforgery/runtime.py:476)
+        Arguments:
+            model: <DeepDocForgeryModel at 0x780a3e7b2f60>
+            loader: <DataLoader at 0x780a7b8e14f0>
+        Locals:
+            device: <torch.device at 0x780a7b3ca1b0>
+            criterion: <DeepDocForgeryCriterion at 0x780a42b98b60>
+            use_amp: True
+            maximum_batches: None
+            metric_config: {"mask_threshold": 0.5, "image_threshold": 0.5, "catastrophic_f1_threshold": 0.1}
+            run: <RunLogger at 0x780a7b3afa40>
+            progress_description: "Validate 33/50"
+            resource_interval_batches: 1000
+            initial_state: None
+            state_callback: None
+            total_batches_override: None
+            state_interval_batches: 100
+            started: 9491.745093516
+            metrics: <StreamingForgeryMetrics at 0x780a42b34ec0>
+            benchmark_metrics: {"doctamper-training": <StreamingForgeryMetrics at 0x780a3e515520>, ...}
+            exact_samples: 6177
+            total_samples: 19105
+            processed_batches: 1737
+            losses: <_LossAverages at 0x780a42083440>
+            prior_duration: 0
+            current: <StreamingForgeryMetrics at 0x780a3e652870>
+            total_batches: 1737
+            remaining_batches: 1737
+            batches: <itertools.islice at 0x780a3e5a00e0>
+            indexed_loader: <enumerate at 0x780a3e5f7e20>
+            progress: <tqdm_asyncio at 0x780a3e589760>
+            batch_index: 1736
+            batch: <ManifestBatch at 0x780a3e5ad0d0>
+            output: <DeepDocForgeryOutput at 0x780a3e5ae300>
+            batch_losses: {"total": <Tensor at 0x780a3e692b70>, "dct_consistency": <Tensor at 0x780a3e7c3a70>, ...}
+            benchmark_names: ["midv-dm"]
+            benchmark: "midv-dm"
+            indices: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+            completed_batches: 1737
+            should_report: True
+            snapshot: {"cpu": {"logical": 28, "physical": 20, "process_percent": 1304.9, "system_percent": 48.2}, ...}
+    decorate_context (torch/utils/_contextlib.py:124)
+        Locals:
+            args: (<DeepDocForgeryModel at 0x780a3e7b2f60>, <DataLoader at 0x780a7b8e14f0>)
+            kwargs: {"device": <torch.device at 0x780a7b3ca1b0>, "criterion": <DeepDocForgeryCriterion at 0x780a42b98b60>, "use_amp": True, ...}
+    _train (deepdocforgery/train.py:809)
+        Arguments:
+            args: <Namespace at 0x780a7b3af860>
+            run: <cell at 0x780a7b9c5a20>
+        Locals:
+            name: "adn/domain_alignment"
+            value: 0
+            config: {...}
+            device: <torch.device at 0x780a7b3ca1b0>
+            compute: {"logical_cpus": 28, "physical_cpus": 20, "torch_threads": 28, "torch_interop_threads": 4, ...}
+            seed: 7
+            output_dir: <PosixPath at 0x780a7b268f90>
+            resume_path: <PosixPath at 0x780a7b27ce40>
+            contract: "cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1"
+            status_path: <PosixPath at 0x780a7b27cdd0>
+            initial_resources: {"cpu": {"logical": 28, "physical": 20, "process_percent": 351.4, "system_percent": 12.7}, ...}
+            train_loader: <DataLoader at 0x780a7b9c7da0>
+            val_loader: <DataLoader at 0x780a7b8e14f0>
+            train_labels: <set at 0x780a7b243920>
+            supervised_counts: {0: 692, 1: 5536}
+            smallest: 692
+            largest: 5536
+            criterion: <DeepDocForgeryCriterion at 0x780a42b98b60>
+            parameters: {"total": 51474589, "trainable": 51474589}
+            learning_rate: 0.0001
+            backbone_multiplier: 0.25
+            backbone_parameters: [<Parameter at 0x780a41a4b2a0>, <Parameter at 0x780a41a4b2f0>, <Parameter at 0x780a4287d4f0>, ...]
+            backbone_ids: <set at 0x780a3e601c40>
+            other_parameters: [<Parameter at 0x780a7b287610>, <Parameter at 0x780a7b287570>, <Parameter at 0x780a7b287660>, ...]
+            parameter_groups: [{"params": [<Parameter at 0x780a7b287610>, <Parameter at 0x780a7b287570>, <Parameter at 0x780a7b287660>, ...], ...}, ...]
+            epochs: 50
+            scheduler: <CosineEpochScheduler at 0x780a41c97770>
+            use_amp: True
+            allow_bf16_retry: True
+            accumulation_steps: 4
+            physical_batch: 11
+            start_epoch: 32
+            best_metric: 0.8114558513227331
+            consecutive_non_finite_loss_batches: 0
+            max_consecutive_non_finite_loss_batches: 5
+            saved_contract: "cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1"
+            restored_rng: True
+            loader_generator: <torch._C.Generator at 0x780b7afbd3f0>
+            metric_name: "pixel_macro/f1_forged"
+            log_path: <PosixPath at 0x780a3e6bbd10>
+            logging_config: {"resource_interval_batches": 1000}
+            resource_interval: 1000
+            epoch: 32
+            epoch_started: 701.215376901
+            loss_sums: {"total": 86924.52165926248, "dct_consistency": 0.2775005354968698, "main/total": 78192.95864700526, ...}
+            example_count: 108383
+            final_attention: {"spatial": 0.6601218581199646, "frequency": 0.08913864195346832, "degradation": 0.2507394850254059}
+            processed_batches: 9853
+            pending_batches: 1
+            skipped_loss_batches: 0
+            bf16_retry_batches: 28
+            bf16_recovered_batches: 28
+            finish_accumulation: <function at 0x780a41a5fb00>
+            dataset_draws: {"midv": 86876, "doctamper": 21507}
+            exact_dct_samples: 974
+            supervision_draws: {"classification": 86876, "localization": 108383, "adn": 108383, "jpeg_degradation": 59382, "noise_degradation": 21775}
+            total_train_batches: 9853
+            batches: <itertools.islice at 0x780a3e5d2200>
+            progress: <tqdm_asyncio at 0x780a3e66a900>
+            training_started: 701.654413537
+            batch_index: 9852
+            loss_values: {"total": 0.8312183618545532, "dct_consistency": 0, "main/total": 0.7266770005226135, ...}
+            attention: {"spatial": 0.6601218581199646, "frequency": 0.08913864195346832, "degradation": 0.2507394850254059}
+            non_finite: []
+            first_losses: {"total": NaN, "dct_consistency": 0, "main/total": NaN, "main/mask_bce": NaN, "main/mask_dice": NaN, "main/image": NaN, ...}
+            batch_size: 11
+            completed_batches: 9853
+            should_report: True
+            snapshot: {"cpu": {"logical": 28, "physical": 20, "process_percent": 100.1, "system_percent": 13.4}, ...}
+            mean_loss: 0.8020125080433507
+            training_duration: 8790.090648694
+    main (deepdocforgery/train.py:1024)
+        Locals:
+            args: <Namespace at 0x780a7b3af860>
+            run: <RunLogger at 0x780a7b3afa40>
+            config: {...}
+            training: {"seed": 7, "cpu_threads": "auto", "amp": True, "epochs": 50, "learning_rate": 0.0001, "weight_decay": 0.0001, ...}
+            output_dir: <PosixPath at 0x780a7b3a57e0>
+    main (deepdocforgery/__main__.py:33)
+        Locals:
+            raw_arguments: ["train", "--config", "configs/cuda/HPO_RESULTS.yaml", "--device", "cuda", "--output", "output/model/cuda-full", ...]
+            command: "train"
+            module: <module at 0x780bdd24de90>
+    <module> (deepdocforgery/__main__.py:54)
+    _run_code (<frozen runpy>:88)
+        Arguments:
+            code: <code at 0x780a7bef21f0>
+            run_globals: {"__name__": "__main__", "__doc__": "Single command-line entry point for the repository.", ...}
+            init_globals: None
+            mod_name: "__main__"
+            mod_spec: <ModuleSpec at 0x780bdd25c3e0>
+            pkg_name: "deepdocforgery"
+            script_name: None
+        Locals:
+            loader: <SourceFileLoader at 0x780bdd25c410>
+            fname: "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py"
+            cached: "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__pycache__/__main__.cpython-312.pyc"
+    _run_module_as_main (<frozen runpy>:198)
+        Arguments:
+            mod_name: "deepdocforgery.__main__"
+            alter_argv: True
+        Locals:
+            mod_spec: <ModuleSpec at 0x780bdd25c3e0>
+            code: <code at 0x780a7bef21f0>
+            main_globals: {"__name__": "__main__", "__doc__": "Single command-line entry point for the repository.", ...}
+Thread 9847 (idle): "tqdm_monitor"
+    wait (threading.py:359)
+        Arguments:
+            self: <Condition at 0x780a3e66af00>
+            timeout: 10
+        Locals:
+            waiter: <_thread.lock at 0x780a41df0140>
+            saved_state: None
+            gotit: False
+    wait (threading.py:655)
+        Arguments:
+            self: <Event at 0x780a3e66af30>
+            timeout: 10
+        Locals:
+            signaled: False
+    run (tqdm/_monitor.py:69)
+        Arguments:
+            self: <TMonitor at 0x780a3e653c20>
+        Locals:
+            cur_t: 1793102349.3171868
+    _bootstrap_inner (threading.py:1073)
+        Arguments:
+            self: <TMonitor at 0x780a3e653c20>
+    _bootstrap (threading.py:1030)
+        Arguments:
+            self: <TMonitor at 0x780a3e653c20>
+Thread 9919 (idle)
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ sudo gdb -q -n -batch -p 9090 -ex 'set pagination off' -ex 'thread 1' -ex 'call (int) PyRun_SimpleString("exec(open(\"DeepDocForgery-epoch33-repair-v2/rescue_running_epoch33.py\").read())")' -ex 'detach'
+[New LWP 9919]
+[New LWP 9847]
+[New LWP 9255]
+[New LWP 9254]
+[New LWP 9253]
+[New LWP 9252]
+[New LWP 9251]
+[New LWP 9250]
+[New LWP 9249]
+[New LWP 9248]
+[New LWP 9247]
+[New LWP 9246]
+[New LWP 9245]
+[New LWP 9244]
+[New LWP 9243]
+[New LWP 9242]
+[New LWP 9241]
+[New LWP 9240]
+[New LWP 9239]
+[New LWP 9238]
+[New LWP 9237]
+[New LWP 9236]
+[New LWP 9235]
+[New LWP 9234]
+[New LWP 9233]
+[New LWP 9232]
+[New LWP 9231]
+[New LWP 9230]
+[New LWP 9229]
+[New LWP 9182]
+[New LWP 9181]
+[New LWP 9180]
+[New LWP 9179]
+[New LWP 9178]
+[New LWP 9177]
+[New LWP 9176]
+[New LWP 9175]
+[New LWP 9174]
+[New LWP 9173]
+[New LWP 9172]
+[New LWP 9171]
+[New LWP 9170]
+[New LWP 9169]
+[New LWP 9168]
+[New LWP 9167]
+[New LWP 9166]
+[New LWP 9165]
+[New LWP 9164]
+[New LWP 9163]
+[New LWP 9162]
+[New LWP 9161]
+[New LWP 9160]
+[New LWP 9159]
+[New LWP 9158]
+[New LWP 9157]
+[New LWP 9156]
+[New LWP 9155]
+[New LWP 9154]
+[New LWP 9150]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00000000005d8f7f in _PyEval_EvalFrameDefault ()
+[Switching to thread 1 (Thread 0x780bdd7b0740 (LWP 9090))]
+#0  0x00000000005d8f7f in _PyEval_EvalFrameDefault ()
+$1 = 0
+[Inferior 1 (process 9090) detached]
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ps -p 9090  -o  pid,etime,stat,cmd
+    PID     ELAPSED STAT CMD
+   9090    05:08:51 Rl+  python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ command -n gdb
+bash: command: -n: invalid option
+command: usage: command [-pVv] command [arg ...]
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ command -v gdb
+/usr/bin/gdb
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
+
 
 
 
@@ -60,3 +357,4 @@ Train 33/50: 100%|█| 9853/9853 [2:26:30<00:00,  1.12batch/s, loss=0.8020 | lr=
 09:40:40 | INFO    | Validate 33/50: 1000/1737 batches | CPU 40% | RAM 18.0/31.0G | RSS 3.9G | VRAM 17.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 1.4/16.4/16.1G
 09:59:28 | INFO    | Validate 33/50: 1737/1737 batches | CPU 48% | RAM 10.8/31.0G | RSS 3.7G | VRAM 4.6/19.5G | GPU 78% | temp 53C | alloc/reserved/peak 1.2/3.8/16.1G
 Validate 33/50: 100%|█| 1737/1737 [39:33<00:00,  1.37s/batch, samples=19105 | CPU 48% | RAM 10.8/31.0G | RSS 3.7G | VRAM 4.6/19.5G | GPU 78% | temp 53
+EPOCH33_RESCUED_NONFINITE_AUROC_SCORES=76

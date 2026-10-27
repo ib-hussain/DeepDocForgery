@@ -1,0 +1,1117 @@
+--- a/deepdocforgery/train.py
++++ b/deepdocforgery/train.py
+@@ -5,6 +5,7 @@
+ import argparse
+ import copy
+ import json
++import math
+ import os
+ import time
+ from collections import Counter, defaultdict
+@@ -15,12 +16,13 @@
+ import torch
+ import yaml
+ 
++from deepdocforgery.data import ManifestBatch
+ from deepdocforgery.io import load_yaml
+ from deepdocforgery.model import DeepDocForgeryModel
+ from deepdocforgery.objectives import DeepDocForgeryCriterion
+ from deepdocforgery.runtime import (
++    CosineEpochScheduler,
+     _as_byte_tensor,
+-    CosineEpochScheduler,
+     atomic_torch_save,
+     capture_rng_state,
+     create_dataloader,
+@@ -226,6 +228,102 @@
+     }
+ 
+ 
++def _forward_backward_batch(
++    model: DeepDocForgeryModel,
++    criterion: DeepDocForgeryCriterion,
++    batch: ManifestBatch,
++    *,
++    device: torch.device,
++    use_amp: bool,
++    scaler: Any,
++    accumulation_steps: int,
++    amp_dtype: torch.dtype = torch.float16,
++) -> tuple[dict[str, float], dict[str, float], list[str]]:
++    """Keep every batch graph inside one frame, including rejected batches.
++
++    Only Python scalars leave this function. A rejected forward has no
++    backward to release saved tensors, so retaining its output/loss in the
++    outer loop would overlap two complete graphs on the next iteration.
++    """
++    with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=use_amp):
++        output = model(
++            batch.rgb,
++            metadata=batch.metadata,
++            exact_dct=batch.exact_dct,
++            classification_valid=batch.supervision.image_valid,
++        )
++        losses = criterion(output, batch.supervision)
++    values = {name: float(value.detach().cpu()) for name, value in losses.items()}
++    non_finite = [name for name, value in values.items() if not math.isfinite(value)]
++    if non_finite:
++        return values, {}, non_finite
++    scaler.scale(losses["total"] / accumulation_steps).backward()
++    first_level = model.front_end.fusion.level_names[0]
++    with torch.no_grad():
++        attention = {
++            name: float(value.detach().cpu())
++            for name, value in output.front_end.fusion.mean_attention()[first_level].items()
++        }
++    return values, attention, []
++
++
++def _batch_with_precision_recovery(
++    model: DeepDocForgeryModel,
++    criterion: DeepDocForgeryCriterion,
++    batch: ManifestBatch,
++    *,
++    device: torch.device,
++    use_amp: bool,
++    scaler: Any,
++    accumulation_steps: int,
++    allow_bf16_retry: bool,
++) -> tuple[dict[str, float], dict[str, float], list[str], dict[str, float] | None]:
++    """Retry only a non-finite FP16 forward, without changing the loss scale.
++
++    The first helper frame is gone before the retry starts. BF16 has the
++    same storage width as FP16 and wider exponent range; a whole-model FP32
++    retry would exceed the memory budget. Restore model RNGs so dropout is
++    replayed. This architecture uses GroupNorm/LayerNorm, not running-stat
++    BatchNorm, and a rejected forward never updates optimiser state.
++    """
++    rng = capture_rng_state() if use_amp and allow_bf16_retry else None
++    values, attention, bad = _forward_backward_batch(
++        model, criterion, batch, device=device, use_amp=use_amp,
++        scaler=scaler, accumulation_steps=accumulation_steps,
++    )
++    if not bad or rng is None:
++        return values, attention, bad, None
++    first_values = values
++    restore_rng_state(rng)
++    values, attention, bad = _forward_backward_batch(
++        model, criterion, batch, device=device, use_amp=True,
++        scaler=scaler, accumulation_steps=accumulation_steps, amp_dtype=torch.bfloat16,
++    )
++    return values, attention, bad, first_values
++
++
++def _optimizer_step(
++    model: torch.nn.Module,
++    optimizer: torch.optim.Optimizer,
++    scaler: Any,
++    max_norm: float,
++) -> tuple[float, bool]:
++    """Never update weights or Adam moments from a non-finite gradient norm."""
++    scaler.unscale_(optimizer)
++    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
++    finite = bool(torch.isfinite(norm))
++    if finite:
++        scaler.step(optimizer)
++        scaler.update()
++    elif scaler.is_enabled():
++        # Explicitly skip: GradScaler's inf check runs before clipping. A
++        # norm reduction can overflow even when individual grads were finite,
++        # and with AMP disabled scaler.step() is an ordinary optimiser step.
++        scaler.update(new_scale=scaler.get_scale() * scaler.get_backoff_factor())
++    optimizer.zero_grad(set_to_none=True)
++    return float(norm.detach().cpu()), finite
++
++
+ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
+     for name in ("maximum_train_batches", "maximum_val_batches"):
+         value = getattr(args, name)
+@@ -394,6 +492,10 @@
+         minimum_learning_rate=float(training.get("minimum_learning_rate", 1e-6)),
+     )
+     use_amp = bool(training.get("amp", True)) and device.type == "cuda"
++    allow_bf16_retry = False
++    if use_amp:
++        with torch.cuda.device(device):
++            allow_bf16_retry = torch.cuda.is_bf16_supported()
+     try:
+         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+     except (AttributeError, TypeError):  # PyTorch 2.2 compatibility
+@@ -415,6 +517,7 @@
+         learning_rate=learning_rate,
+         minimum_learning_rate=float(training.get("minimum_learning_rate", 1e-6)),
+         selection_metric=str(training.get("selection_metric", "pixel/f1")),
++        non_finite_forward_retry="bfloat16" if allow_bf16_retry else None,
+     )
+ 
+     start_epoch = 0
+@@ -425,13 +528,11 @@
+         training.get("max_consecutive_non_finite_grad_steps", 20)
+     )
+     consecutive_non_finite_loss_batches = 0
+-    max_coEOFnsecutive_non_finite_loss_batches = int(
+-        training.get("max_consecutive_non_finite_loss_batches", 5)
+-    )
+-    consecutive_non_finite_loss_batches = 0
+     max_consecutive_non_finite_loss_batches = int(
+         training.get("max_consecutive_non_finite_loss_batches", 5)
+     )
++    if min(max_consecutive_non_finite_steps, max_consecutive_non_finite_loss_batches) < 1:
++        raise ValueError("Non-finite loss/gradient limits must be positive")
+     if resume_path is not None:
+         checkpoint = load_checkpoint(
+             resume_path,
+@@ -439,7 +540,9 @@
+             optimizer=optimizer,
+             scheduler=scheduler,
+             scaler=scaler,
+-            map_location=device,
++            # load_state_dict copies weights and moves optimiser state to the
++            # parameter device. Avoid keeping a second model copy in VRAM.
++            map_location="cpu",
+         )
+         saved_contract = checkpoint.get("contract")
+         if saved_contract is None:
+@@ -500,6 +603,7 @@
+                 checkpoint=str(resume_path.resolve()),
+                 last_checkpoint=str((output_dir / "last.pt").resolve()),
+             )
++        del checkpoint, saved_generator_state
+ 
+     metric_name = str(training.get("selection_metric", "pixel/f1"))
+     log_path = output_dir / "metrics.jsonl"
+@@ -522,6 +626,49 @@
+         final_gradient_norm = 0.0
+         final_attention: dict[str, float] = {}
+         processed_batches = 0
++        pending_batches = 0
++        skipped_loss_batches = 0
++        skipped_gradient_steps = 0
++        optimizer_updates = 0
++        bf16_retry_batches = 0
++        bf16_recovered_batches = 0
++
++        def finish_accumulation(batch_index: int, epoch: int = epoch) -> None:
++            nonlocal global_step, final_gradient_norm, consecutive_non_finite_steps
++            nonlocal skipped_gradient_steps, optimizer_updates
++            scale_before = float(scaler.get_scale())
++            gradient_norm, updated = _optimizer_step(
++                model, optimizer, scaler, float(training.get("gradient_clip_norm", 5.0))
++            )
++            # Historical checkpoints count step attempts here, including AMP
++            # skips. Retain that meaning and report successful updates apart.
++            global_step += 1
++            if updated:
++                consecutive_non_finite_steps = 0
++                final_gradient_norm = gradient_norm
++                optimizer_updates += 1
++                return
++            skipped_gradient_steps += 1
++            consecutive_non_finite_steps += 1
++            run.warning(
++                f"Non-finite gradient at epoch {epoch + 1}, batch {batch_index + 1}; "
++                f"optimiser step skipped ({consecutive_non_finite_steps}/"
++                f"{max_consecutive_non_finite_steps} consecutive)",
++                event="non_finite_gradient_skipped",
++                epoch=epoch + 1,
++                batch=batch_index + 1,
++                batch_index=batch_index,
++                consecutive_non_finite_steps=consecutive_non_finite_steps,
++                scale=scale_before,
++                next_scale=float(scaler.get_scale()),
++            )
++            if consecutive_non_finite_steps >= max_consecutive_non_finite_steps:
++                raise RuntimeError(
++                    f"{consecutive_non_finite_steps} consecutive non-finite gradients "
++                    f"through epoch {epoch + 1}, batch {batch_index + 1}; "
++                    "stopping without overwriting the last completed checkpoint."
++                )
++
+         dataset_draws: Counter[str] = Counter()
+         exact_dct_samples = 0
+         supervision_draws: Counter[str] = Counter()
+@@ -556,96 +703,75 @@
+                 supervision_draws["noise_degradation"] += int(
+                     (batch.supervision.degradation.noise_valid.flatten(1).sum(1) > 0).sum().item()
+                 )
+-            with torch.autocast(
+-                device_type=device.type,
+-                dtype=torch.float16,
+-                enabled=use_amp,
+-            ):
+-                output = model(
+-                    batch.rgb,
+-                    metadata=batch.metadata,
+-                    exact_dct=batch.exact_dct,
+-                    classification_valid=batch.supervision.image_valid,
++            loss_values, attention, non_finite, first_losses = _batch_with_precision_recovery(
++                model, criterion, batch, device=device, use_amp=use_amp,
++                scaler=scaler, accumulation_steps=accumulation_steps,
++                allow_bf16_retry=allow_bf16_retry,
++            )
++            if first_losses is not None:
++                bf16_retry_batches += 1
++                bf16_recovered_batches += int(not non_finite)
++                run.warning(
++                    f"Epoch {epoch + 1}, batch {batch_index + 1}: non-finite FP16 loss; "
++                    f"BF16 retry {'recovered' if not non_finite else 'also non-finite'}",
++                    event="non_finite_loss_precision_retry",
++                    epoch=epoch + 1,
++                    batch=batch_index + 1,
++                    batch_index=batch_index,
++                    recovered=not non_finite,
++                    original_non_finite_components=[
++                        name for name, value in first_losses.items() if not math.isfinite(value)
++                    ],
++                    original_losses={name: value if math.isfinite(value) else str(value)
++                                     for name, value in first_losses.items()},
++                    samples=[record.sample_id for record in batch.records],
+                 )
+-                losses = criterion(output, batch.supervision)
+-                scaled_loss = losses["total"] / accumulation_steps
+-            if not bool(torch.isfinite(losses["total"])):
++            if non_finite:
+                 bad_samples = [
+                     {"sample_id": record.sample_id, "image": record.image}
+                     for record in batch.records
+                 ]
+                 consecutive_non_finite_loss_batches += 1
++                skipped_loss_batches += 1
+                 run.warning(
+-                    f"Non-finite loss at epoch {epoch}, batch {batch_index}; skipping batch "
++                    f"Non-finite loss at epoch {epoch + 1}, batch {batch_index + 1}; "
++                    f"components={','.join(non_finite)}; skipping batch "
+                     f"({consecutive_non_finite_loss_batches}/"
+                     f"{max_consecutive_non_finite_loss_batches} consecutive)",
+                     event="non_finite_loss_skipped",
+-                    epoch=epoch,
+-                    batch=batch_index,
++                    epoch=epoch + 1,
++                    batch=batch_index + 1,
++                    batch_index=batch_index,
++                    non_finite_components=non_finite,
++                    losses={name: value if math.isfinite(value) else str(value)
++                            for name, value in loss_values.items()},
+                     consecutive_non_finite_loss_batches=consecutive_non_finite_loss_batches,
+                     samples=bad_samples,
+                 )
+                 if consecutive_non_finite_loss_batches >= max_consecutive_non_finite_loss_batches:
+                     raise RuntimeError(
+                         f"{consecutive_non_finite_loss_batches} consecutive non-finite-loss "
+-                        f"batches through epoch {epoch}, batch {batch_index}; this is beyond "
++                        f"batches through epoch {epoch + 1}, batch {batch_index + 1}; this is beyond "
+                         "an isolated bad sample and likely indicates real divergence "
+                         "(check learning rate, loss weights, or data)."
+                     )
++                # The helper has already released the failed graph. Keep the
++                # gradients from earlier valid microbatches and their scale.
++                del batch
+                 continue
+             consecutive_non_finite_loss_batches = 0
+-            scaler.scale(scaled_loss).backward()
+             processed_batches += 1
+-            should_step = processed_batches % accumulation_steps == 0
+-            is_last_batch = batch_index + 1 == total_train_batches
+-            if should_step or is_last_batch:
+-                scaler.unscale_(optimizer)
+-                gradient_norm = torch.nn.utils.clip_grad_norm_(
+-                    model.parameters(), float(training.get("gradient_clip_norm", 5.0))
+-                )
+-                # A non-finite gradient here is expected, normal behaviour while
+-                # GradScaler calibrates its loss-scale factor early in training (or
+-                # occasionally afterwards) -- that is exactly what scaler.step()/
+-                # scaler.update() below are designed to absorb: step() skips the
+-                # optimizer update for this batch and update() backs off the scale.
+-                # Only a *persistent* run of non-finite gradients indicates a real
+-                # divergence problem worth stopping for.
+-                if not bool(torch.isfinite(gradient_norm)):
+-                    consecutive_non_finite_steps += 1
+-                    run.warning(
+-                        f"Non-finite gradient at epoch {epoch}, batch {batch_index} "
+-                        f"(scaler backing off scale; {consecutive_non_finite_steps}/"
+-                        f"{max_consecutive_non_finite_steps} consecutive)",
+-                        event="non_finite_gradient_skipped",
+-                        epoch=epoch,
+-                        batch=batch_index,
+-                        consecutive_non_finite_steps=consecutive_non_finite_steps,
+-                        scale=float(scaler.get_scale()),
+-                    )
+-                    if consecutive_non_finite_steps >= max_consecutive_non_finite_steps:
+-                        raise RuntimeError(
+-                            f"{consecutive_non_finite_steps} consecutive non-finite gradients "
+-                            f"through epoch {epoch}, batch {batch_index}; this is beyond normal "
+-                            "AMP loss-scale calibration and likely indicates a real divergence "
+-                            "(check learning rate, loss weights, or data)."
+-                        )
+-                else:
+-                    consecutive_non_finite_steps = 0
+-                    final_gradient_norm = float(gradient_norm.detach().cpu())
+-                scaler.step(optimizer)
+-                scaler.update()
+-                optimizer.zero_grad(set_to_none=True)
+-                global_step += 1
++            pending_batches += 1
++            if pending_batches == accumulation_steps:
++                finish_accumulation(batch_index)
++                pending_batches = 0
+ 
+             batch_size = batch.rgb.shape[0]
+             example_count += batch_size
+-            for name, value in losses.items():
+-                loss_sums[name] += float(value.detach().cpu()) * batch_size
+-            first_level = model.front_end.fusion.level_names[0]
+-            final_attention = {
+-                name: float(value.detach().cpu())
+-                for name, value in output.front_end.fusion.mean_attention()[first_level].items()
+-            }
++            for name, value in loss_values.items():
++                loss_sums[name] += value * batch_size
++            final_attention = attention
++            del batch
+             completed_batches = batch_index + 1
+             should_report = completed_batches == total_train_batches or (
+                 resource_interval > 0 and completed_batches % resource_interval == 0
+@@ -671,6 +797,10 @@
+                     resources=snapshot,
+                 )
+         progress.close()
++        # Flush valid accumulated gradients even if the last fetched batch was
++        # rejected. Retain the original /accumulation_steps tail weighting.
++        if pending_batches:
++            finish_accumulation(total_train_batches - 1)
+         training_duration = max(time.perf_counter() - training_started, 1e-9)
+         if processed_batches == 0:
+             raise RuntimeError("No training batches were processed")
+@@ -714,6 +844,14 @@
+             "dataset_draws": dict(dataset_draws),
+             "exact_dct_samples": exact_dct_samples,
+             "supervision_draws": dict(supervision_draws),
++            "stability": {
++                "accepted_loss_batches": processed_batches,
++                "skipped_loss_batches": skipped_loss_batches,
++                "skipped_gradient_steps": skipped_gradient_steps,
++                "optimizer_updates": optimizer_updates,
++                "bf16_retry_batches": bf16_retry_batches,
++                "bf16_recovered_batches": bf16_recovered_batches,
++            },
+             "train": {name: value / max(1, example_count) for name, value in loss_sums.items()},
+             "validation": validation,
+             "resources": resource_snapshot(device),
+@@ -769,6 +907,7 @@
+         save_every = int(training.get("save_every_epochs", 0))
+         if save_every > 0 and (epoch + 1) % save_every == 0:
+             atomic_torch_save(payload, output_dir / f"epoch-{epoch + 1:04d}.pt")
++        del payload
+         epoch_loss = record["train"].get("total", float("nan"))
+         validation_precision = validation.get("pixel/precision")
+         validation_recall = validation.get("pixel/recall")
+--- a/deepdocforgery/spatial.py
++++ b/deepdocforgery/spatial.py
+@@ -697,7 +697,8 @@
+         selected = features.permute(0, 2, 3, 1)[mask.squeeze(1).bool()]
+         if selected.numel() == 0:
+             return None
+-        return F.normalize(selected.mean(dim=0), dim=0)
++        # Prototype reductions and normalisation need FP32 range under AMP.
++        return F.normalize(selected.float().mean(dim=0), dim=0)
+ 
+     def _attract_and_separate(
+         self,
+@@ -723,7 +724,11 @@
+         output: SpatialBranchOutput,
+         targets: ADNSupervision,
+     ) -> dict[str, Tensor]:
+-        logits = output.adn_auxiliary_logits
++        # The auxiliary head remains in AMP. Only this small loss map is FP32.
++        # This also makes direct half-precision callers safe without relying
++        # on CUDA autocast's reduction policy. This guard alone does not
++        # diagnose a non-finite loss produced inside CUDA autocast.
++        logits = output.adn_auxiliary_logits.float()
+         artifact = self._map(targets.artifact_mask, logits.shape[-2:])
+         valid = (
+             torch.ones_like(artifact)
+@@ -735,7 +740,7 @@
+             dim=1
+         ).clamp_min(1.0)
+         sample_valid = valid.flatten(1).sum(dim=1) > 0
+-        zero = logits.sum() * 0.0
++        zero = (logits * 0.0).sum()
+ 
+         if targets.domain_index is None:
+             text_bce = sample_loss[sample_valid].mean() if bool(sample_valid.any()) else zero
+--- a/deepdocforgery/decoder.py
++++ b/deepdocforgery/decoder.py
+@@ -220,6 +220,11 @@
+ 
+     @staticmethod
+     def _weighted_pool(features: Tensor, weights: Tensor) -> Tensor:
++        # A finite weighted mean can have a sum outside FP16's range. Keep
++        # the product, reductions and division in FP32; AMP still applies to
++        # the following classifier layers and the large convolutional maps.
++        features = features.float()
++        weights = weights.float()
+         numerator = (features * weights).sum(dim=(-2, -1))
+         denominator = weights.sum(dim=(-2, -1)).clamp_min(1e-6)
+         return numerator / denominator
+--- a/deepdocforgery/epoch33_preflight.py
++++ b/deepdocforgery/epoch33_preflight.py
+@@ -0,0 +1,188 @@
++"""Check a saved run and optionally probe its batches without saving updates."""
++
++from __future__ import annotations
++
++import argparse
++import math
++from itertools import islice
++from pathlib import Path
++from typing import Any
++
++import torch
++
++from deepdocforgery.io import load_yaml
++from deepdocforgery.model import DeepDocForgeryModel
++from deepdocforgery.objectives import DeepDocForgeryCriterion
++from deepdocforgery.runtime import (
++    CosineEpochScheduler,
++    _as_byte_tensor,
++    create_dataloader,
++    resolve_device,
++    restore_rng_state,
++    seed_everything,
++)
++from deepdocforgery.state import StageLock, sha256_file
++from deepdocforgery.telemetry import configure_compute, print_result, resource_snapshot
++from deepdocforgery.train import (
++    _batch_with_precision_recovery,
++    _optimizer_step,
++    _training_contract,
++)
++
++
++def check_tensors(value: Any, path: str) -> int:
++    """Check one tensor at a time on CPU, without making another state copy."""
++    if isinstance(value, torch.Tensor):
++        if (value.is_floating_point() or value.is_complex()) and not bool(
++            torch.isfinite(value).all()
++        ):
++            raise ValueError(f"Non-finite checkpoint tensor: {path}")
++        return 1
++    if isinstance(value, dict):
++        return sum(check_tensors(item, f"{path}.{key}") for key, item in value.items())
++    if isinstance(value, (list, tuple)):
++        return sum(check_tensors(item, f"{path}[{i}]") for i, item in enumerate(value))
++    return 0
++
++
++def verify(args: argparse.Namespace) -> dict[str, Any]:
++    config = load_yaml(args.config)
++    config_hash = sha256_file(args.config)
++    checkpoint_hash = sha256_file(args.checkpoint)
++    # Only load a trusted checkpoint produced by this repository.
++    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
++    required = ("model", "optimizer", "scheduler", "scaler", "rng_state",
++                "data_generator_state", "epoch", "global_step", "contract")
++    if not isinstance(checkpoint, dict) or any(key not in checkpoint for key in required):
++        raise ValueError("Checkpoint is missing full resume state; do not start a fresh run")
++    completed = int(checkpoint["epoch"]) + 1
++    if completed != args.expected_completed_epochs:
++        raise ValueError(f"Expected {args.expected_completed_epochs} completed epochs; found {completed}")
++    if checkpoint["contract"] != _training_contract(config, device=args.device):
++        raise ValueError("Checkpoint/config/manifest contract differs; keep the original YAML, manifest and path")
++    training = config["training"]
++    if int(checkpoint["scheduler"]["total_epochs"]) != int(training["epochs"]):
++        raise ValueError("Saved scheduler total does not match the unchanged YAML")
++    if int(checkpoint["scheduler"]["last_epoch"]) != completed:
++        raise ValueError("Saved scheduler epoch does not match the checkpoint epoch")
++    if checkpoint["rng_state"] is None or checkpoint["data_generator_state"] is None:
++        raise ValueError("The original RNG or data generator state is missing")
++    tensors = check_tensors(checkpoint["model"], "model")
++    tensors += check_tensors(checkpoint["optimizer"], "optimizer")
++    report: dict[str, Any] = {
++        "status": "ok", "completed_epochs": completed, "next_epoch": completed + 1,
++        "global_step": checkpoint["global_step"], "finite_state_tensors": tensors,
++        "config_sha256": config_hash, "checkpoint_sha256": checkpoint_hash,
++        "physical_batch_size": config["data"]["batch_size"],
++        "gradient_accumulation_steps": training["gradient_accumulation_steps"],
++        "saved_learning_rates": [group["lr"] for group in checkpoint["optimizer"]["param_groups"]],
++        "probe_batches": 0,
++    }
++    if args.probe_batches:
++        report.update(probe(config, checkpoint, args))
++    if sha256_file(args.config) != config_hash or sha256_file(args.checkpoint) != checkpoint_hash:
++        raise RuntimeError("Config/checkpoint changed during the check; stop before resuming")
++    report["config_and_checkpoint_unchanged"] = True
++    return report
++
++
++def probe(config: dict, checkpoint: dict, args: argparse.Namespace) -> dict[str, Any]:
++    device = resolve_device(args.device)
++    training = config["training"]
++    configure_compute(device, cpu_threads=training.get("cpu_threads", "auto"))
++    seed_everything(int(training.get("seed", 7)), deterministic=bool(training.get("deterministic", False)))
++    loader = create_dataloader(config, split="train", shuffle=True)
++    model = DeepDocForgeryModel.from_config(config["model"], load_pretrained=False).to(device).train()
++    criterion = DeepDocForgeryCriterion.from_config(config.get("loss", {})).to(device)
++    backbone = list(model.front_end.spatial.vit.parameters())
++    backbone_ids = {id(p) for p in backbone}
++    lr = float(training.get("learning_rate", 3e-4))
++    optimizer = torch.optim.AdamW([
++        {"params": [p for p in model.parameters() if id(p) not in backbone_ids], "lr": lr, "name": "main"},
++        {"params": backbone, "lr": lr * float(training.get("backbone_learning_rate_multiplier", 1.0)), "name": "spatial_backbone"},
++    ], weight_decay=float(training.get("weight_decay", 1e-4)))
++    scheduler = CosineEpochScheduler(optimizer, total_epochs=int(training["epochs"]),
++                                    minimum_learning_rate=float(training.get("minimum_learning_rate", 1e-6)))
++    use_amp = bool(training.get("amp", True)) and device.type == "cuda"
++    try:
++        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
++    except (AttributeError, TypeError):
++        scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
++    model.load_state_dict(checkpoint["model"], strict=True)
++    optimizer.load_state_dict(checkpoint["optimizer"])
++    scheduler.load_state_dict(checkpoint["scheduler"])
++    scaler.load_state_dict(checkpoint["scaler"])
++    restore_rng_state(checkpoint["rng_state"])
++    loader.generator.set_state(_as_byte_tensor(checkpoint["data_generator_state"]))
++    # verify() no longer needs tensors; release the CPU copy before the probe.
++    checkpoint.clear()
++    allow_retry = False
++    if use_amp:
++        with torch.cuda.device(device):
++            allow_retry = torch.cuda.is_bf16_supported()
++            torch.cuda.reset_peak_memory_stats(device)
++    accumulation = int(training["gradient_accumulation_steps"])
++    if args.probe_batches < accumulation or args.probe_batches % accumulation:
++        raise ValueError("--probe-batches must be a positive multiple of the configured accumulation")
++    if args.probe_batches > len(loader):
++        raise ValueError("The manifest does not contain that many probe batches")
++    if args.inject_rejected_forward and not allow_retry:
++        raise ValueError("The injected recovery probe requires CUDA BF16 support")
++
++    class RejectOnce:
++        def __init__(self):
++            self.pending = args.inject_rejected_forward
++
++        def __call__(self, output, supervision):
++            losses = criterion(output, supervision)
++            if self.pending:
++                self.pending = False
++                losses["total"] = losses["total"] * float("nan")
++            return losses
++
++    checked_criterion = RejectOnce()
++    updates = 0
++    retries = 0
++    optimizer.zero_grad(set_to_none=True)
++    for i, batch in enumerate(islice(loader, args.probe_batches), start=1):
++        batch = batch.to(device, non_blocking=True)
++        values, _, bad, first = _batch_with_precision_recovery(
++            model, checked_criterion, batch, device=device, use_amp=use_amp,
++            scaler=scaler, accumulation_steps=accumulation, allow_bf16_retry=allow_retry,
++        )
++        retries += int(first is not None)
++        if bad:
++            raise RuntimeError(f"Probe batch {i}: non-finite components {bad}; losses={values}")
++        del batch
++        if i % accumulation == 0:
++            norm, updated = _optimizer_step(model, optimizer, scaler, float(training.get("gradient_clip_norm", 5.0)))
++            if not updated or not math.isfinite(norm):
++                raise RuntimeError(f"Probe batch {i}: non-finite gradient norm {norm}")
++            updates += 1
++        print_result({"probe_batch": i, "total_loss": values["total"], "in_memory_updates": updates})
++    if args.inject_rejected_forward and retries < 1:
++        raise RuntimeError("The requested rejected-forward recovery was not exercised")
++    return {"probe_batches": args.probe_batches, "in_memory_updates_discarded": updates,
++            "precision_retries": retries, "injected_rejected_forward": args.inject_rejected_forward,
++            "resources": resource_snapshot(device)}
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--config", type=Path, default=Path("configs/cuda/HPO_RESULTS.yaml"))
++    parser.add_argument("--checkpoint", type=Path, default=Path("output/model/cuda-full/last.pt"))
++    parser.add_argument("--device", default="cuda")
++    parser.add_argument("--expected-completed-epochs", type=int, default=32)
++    parser.add_argument("--probe-batches", type=int, default=0)
++    parser.add_argument("--inject-rejected-forward", action="store_true")
++    args = parser.parse_args()
++    if args.probe_batches < 0 or (args.inject_rejected_forward and not args.probe_batches):
++        parser.error("Choose positive --probe-batches when injecting a rejected forward")
++    if not args.checkpoint.is_file():
++        parser.error(f"Missing checkpoint: {args.checkpoint}; do not start a fresh run")
++    with StageLock(args.checkpoint.parent / ".train.lock", stage="train"):
++        print_result(verify(args))
++
++
++if __name__ == "__main__":
++    main()
+--- a/deepdocforgery/metrics.py
++++ b/deepdocforgery/metrics.py
+@@ -2,6 +2,7 @@
+ 
+ from __future__ import annotations
+ 
++import math
+ from dataclasses import dataclass
+ 
+ import torch
+@@ -24,6 +25,12 @@
+     positives = sum(value == 1 for value in labels)
+     negatives = sum(value == 0 for value in labels)
+     if positives == 0 or negatives == 0:
++        return None
++    # NaN never equals itself.  Without this guard the threshold-grouping
++    # loop below cannot advance when a non-finite prediction is encountered.
++    # An AUROC computed after inventing or dropping scores would be misleading,
++    # so expose it as unavailable and report the count from compute().
++    if any(not math.isfinite(score) for score in scores):
+         return None
+     order = sorted(range(len(scores)), key=lambda index: scores[index], reverse=True)
+     true_positive = false_positive = 0
+@@ -337,6 +344,9 @@
+             result[f"area/{bucket}/images"] = float(len(values))
+         result.update(self.image.metrics("image", null_if_empty=True))
+         result["image/auroc"] = binary_auroc(self.image_scores, self.image_labels)
++        result["image/non_finite_scores"] = float(
++            sum(not math.isfinite(score) for score in self.image_scores)
++        )
+         result["image/supervised_samples"] = float(len(self.image_labels))
+         result["image/supervised_authentic"] = float(sum(label == 0 for label in self.image_labels))
+         result["image/supervised_forged"] = float(sum(label == 1 for label in self.image_labels))
+--- a/deepdocforgery/runtime.py
++++ b/deepdocforgery/runtime.py
+@@ -288,6 +288,42 @@
+         self.examples = int(state.get("examples", 0))
+ 
+ 
++def _evaluation_batch(
++    model: DeepDocForgeryModel,
++    criterion: DeepDocForgeryCriterion | None,
++    batch: ManifestBatch,
++    *,
++    device: torch.device,
++    use_amp: bool,
++    amp_dtype: torch.dtype = torch.float16,
++) -> tuple[Any, Mapping[str, torch.Tensor] | None, list[str]]:
++    """Evaluate one batch and identify invalid values before metrics consume it."""
++    with torch.autocast(
++        device_type=device.type,
++        dtype=amp_dtype,
++        enabled=use_amp and device.type == "cuda",
++    ):
++        output = model(
++            batch.rgb,
++            metadata=batch.metadata,
++            exact_dct=batch.exact_dct,
++            classification_valid=batch.supervision.image_valid,
++        )
++        batch_losses = None if criterion is None else criterion(output, batch.supervision)
++    non_finite: list[str] = []
++    if not bool(torch.isfinite(output.decoder.mask_probability).all()):
++        non_finite.append("output/mask_probability")
++    if not bool(torch.isfinite(output.decoder.image_probability).all()):
++        non_finite.append("output/image_probability")
++    if batch_losses is not None:
++        non_finite.extend(
++            f"loss/{name}"
++            for name, value in batch_losses.items()
++            if not bool(torch.isfinite(value).all())
++        )
++    return output, batch_losses, non_finite
++
++
+ @torch.no_grad()
+ def evaluate_model(
+     model: DeepDocForgeryModel,
+@@ -361,6 +397,10 @@
+     remaining_batches = max(0, total_batches - processed_batches)
+     batches = islice(loader, remaining_batches)
+     indexed_loader = enumerate(batches, start=processed_batches)
++    allow_bf16_retry = False
++    if use_amp and device.type == "cuda":
++        with torch.cuda.device(device):
++            allow_bf16_retry = torch.cuda.is_bf16_supported()
+     progress = (
+         run.progress(
+             indexed_loader,
+@@ -375,20 +415,39 @@
+     for batch_index, batch in progress:
+         processed_batches += 1
+         batch = batch.to(device, non_blocking=True)
+-        with torch.autocast(
+-            device_type=device.type,
+-            dtype=torch.float16,
+-            enabled=use_amp and device.type == "cuda",
+-        ):
+-            output = model(
+-                batch.rgb,
+-                metadata=batch.metadata,
+-                exact_dct=batch.exact_dct,
+-                classification_valid=batch.supervision.image_valid,
+-            )
+-            if criterion is not None:
+-                batch_losses = criterion(output, batch.supervision)
+-                losses.update(batch_losses, batch.rgb.shape[0])
++        output, batch_losses, non_finite = _evaluation_batch(
++            model, criterion, batch, device=device, use_amp=use_amp,
++        )
++        first_non_finite = non_finite
++        if non_finite and allow_bf16_retry:
++            # Drop every tensor from the rejected forward before retrying so
++            # two model activation sets never overlap in VRAM.
++            del output, batch_losses
++            output, batch_losses, non_finite = _evaluation_batch(
++                model, criterion, batch, device=device, use_amp=True,
++                amp_dtype=torch.bfloat16,
++            )
++            if run is not None:
++                run.warning(
++                    f"{progress_description}, batch {batch_index + 1}: non-finite FP16 "
++                    f"validation values; BF16 retry "
++                    f"{'recovered' if not non_finite else 'also non-finite'}",
++                    event="validation_non_finite_precision_retry",
++                    batch=batch_index + 1,
++                    batch_index=batch_index,
++                    original_non_finite_components=first_non_finite,
++                    retry_non_finite_components=non_finite,
++                    recovered=not non_finite,
++                    samples=[record.sample_id for record in batch.records],
++                )
++        if non_finite:
++            raise RuntimeError(
++                f"Non-finite validation values at batch {batch_index + 1}: "
++                f"{','.join(non_finite)}. Stopping before metrics or checkpoint selection "
++                "can consume invalid predictions."
++            )
++        if batch_losses is not None:
++            losses.update(batch_losses, batch.rgb.shape[0])
+         metrics.update(
+             mask_probability=output.decoder.mask_probability,
+             tamper_mask=batch.supervision.tamper_mask,
+--- a/tests/test_epoch33_recovery.py
++++ b/tests/test_epoch33_recovery.py
+@@ -0,0 +1,296 @@
++from __future__ import annotations
++
++import argparse
++import copy
++import gc
++import json
++import weakref
++from types import SimpleNamespace
++
++import numpy as np
++import pytest
++import torch
++import yaml
++from PIL import Image
++
++import deepdocforgery.train as train
++from deepdocforgery.decoder import SynergyDenoisingDecoder
++from deepdocforgery.io import load_yaml
++from deepdocforgery.spatial import ADNSupervision, ArtifactDecouplingLoss
++from deepdocforgery.telemetry import RunLogger
++
++
++@pytest.fixture(autouse=True)
++def bounded_threads():
++    previous = torch.get_num_threads()
++    torch.set_num_threads(2)
++    yield
++    torch.set_num_threads(previous)
++
++
++@pytest.mark.parametrize("value", [-24.0, 24.0])
++def test_adn_direct_half_input_cannot_overflow_the_zero_term(value):
++    # Direct FP16 is deliberately tested without CUDA autocast. CUDA's sum
++    # policy differs; this is a portability guard, not proof of the old NaN.
++    logits = torch.full((11, 1, 16, 16), value, dtype=torch.float16, requires_grad=True)
++    assert torch.isfinite(logits).all()
++    assert not torch.isfinite(logits.sum() * 0)
++    output = SimpleNamespace(
++        adn_auxiliary_logits=logits,
++        adn_features={"s32": torch.ones(11, 4, 16, 16, dtype=torch.float16)},
++    )
++    losses = ArtifactDecouplingLoss()(output, ADNSupervision(torch.zeros_like(logits)))
++    assert all(torch.isfinite(value) for value in losses.values())
++    assert losses["nontext_bce"] == 0
++    assert losses["text_decoupling"] == 0
++    assert losses["domain_alignment"] == 0
++    losses["total"].backward()
++    assert torch.isfinite(logits.grad).all()
++
++
++def test_weighted_pool_half_forward_and_gradients_match_fp32():
++    features = torch.full((1, 2, 64, 64), 20.0, dtype=torch.float16, requires_grad=True)
++    weights = torch.ones(1, 1, 64, 64, dtype=torch.float16, requires_grad=True)
++    assert not torch.isfinite((features * weights).sum((-2, -1))).all()
++    pooled = SynergyDenoisingDecoder._weighted_pool(features, weights)
++    torch.testing.assert_close(pooled, torch.full((1, 2), 20.0))
++    pooled.sum().backward()
++    assert torch.isfinite(features.grad).all()
++    assert torch.isfinite(weights.grad).all()
++
++
++class ToyModel(torch.nn.Module):
++    def __init__(self, *, large=False, dropout=0.0):
++        super().__init__()
++        self.linear = torch.nn.Linear(2, 1, bias=False)
++        torch.nn.init.constant_(self.linear.weight, 500.0 if large else 0.25)
++        self.dropout = torch.nn.Dropout(dropout)
++        self.front_end = SimpleNamespace(fusion=SimpleNamespace(level_names=("s8",)))
++        self.dropout_values = []
++        self.saved_refs = []
++
++    def forward(self, rgb, **kwargs):
++        del kwargs
++        dropped = self.dropout(rgb)
++        self.dropout_values.append(dropped.detach().cpu().clone())
++        value = self.linear(dropped)
++        saved = value.square()
++        self.saved_refs.append(weakref.ref(saved))
++        return SimpleNamespace(
++            value=saved,
++            front_end=SimpleNamespace(fusion=SimpleNamespace(
++                mean_attention=lambda: {"s8": {"spatial": saved.mean().sigmoid()}}
++            )),
++        )
++
++
++def toy_batch(device="cpu"):
++    return SimpleNamespace(
++        rgb=torch.full((4, 2), 100.0, device=device), metadata=None, exact_dct=None,
++        supervision=SimpleNamespace(image_valid=torch.ones(4, 1, device=device)),
++    )
++
++
++@pytest.mark.parametrize("reject", [False, True])
++def test_no_batch_graph_survives_helper_return(reject):
++    model = ToyModel()
++    scaler = torch.amp.GradScaler("cpu", enabled=False)
++
++    def criterion(output, _):
++        total = output.value.mean() * (float("nan") if reject else 1.0)
++        return {"total": total, "component": total}
++
++    for _ in range(3):
++        values, _, bad = train._forward_backward_batch(
++            model, criterion, toy_batch(), device=torch.device("cpu"),
++            use_amp=False, scaler=scaler, accumulation_steps=4,
++        )
++        gc.collect()
++        assert all(ref() is None for ref in model.saved_refs)
++        assert bool(bad) == reject
++        assert all(isinstance(value, float) for value in values.values())
++    assert (model.linear.weight.grad is None) == reject
++
++
++@pytest.mark.parametrize("enabled", [False, True])
++def test_bf16_retry_replays_rng_and_keeps_previous_accumulation(enabled):
++    torch.manual_seed(17)
++    model = ToyModel(large=True, dropout=0.5)
++    model.linear.weight.grad = torch.full_like(model.linear.weight, 3.0)
++    reference = copy.deepcopy(model)
++    rng = torch.get_rng_state()
++    scaler = torch.amp.GradScaler("cpu", enabled=enabled, init_scale=32.0)
++    def criterion(output, _):
++        return {"total": output.value.mean()}
++    values, _, bad, first = train._batch_with_precision_recovery(
++        model, criterion, toy_batch(), device=torch.device("cpu"), use_amp=True,
++        scaler=scaler, accumulation_steps=4, allow_bf16_retry=True,
++    )
++    assert first is not None and not np.isfinite(first["total"])
++    assert not bad and np.isfinite(values["total"])
++    assert len(model.dropout_values) == 2
++    torch.testing.assert_close(model.dropout_values[0], model.dropout_values[1])
++    after_retry_rng = torch.get_rng_state()
++    torch.set_rng_state(rng)
++    reference.linear.weight.grad = torch.full_like(reference.linear.weight, 3.0)
++    train._forward_backward_batch(
++        reference, criterion, toy_batch(), device=torch.device("cpu"), use_amp=True,
++        scaler=scaler, accumulation_steps=4, amp_dtype=torch.bfloat16,
++    )
++    torch.testing.assert_close(model.linear.weight.grad, reference.linear.weight.grad)
++    assert torch.equal(after_retry_rng, torch.get_rng_state())
++    gc.collect()
++    assert all(ref() is None for ref in model.saved_refs)
++
++
++def test_failed_retry_leaves_existing_gradients_unchanged():
++    model = ToyModel()
++    model.linear.weight.grad = torch.full_like(model.linear.weight, 7.0)
++    def criterion(output, _):
++        return {"total": output.value.mean() * float("nan")}
++    _, _, bad, first = train._batch_with_precision_recovery(
++        model, criterion, toy_batch(), device=torch.device("cpu"), use_amp=True,
++        scaler=torch.amp.GradScaler("cpu", enabled=False), accumulation_steps=4,
++        allow_bf16_retry=True,
++    )
++    assert bad == ["total"] and first is not None
++    torch.testing.assert_close(model.linear.weight.grad, torch.full_like(model.linear.weight, 7.0))
++    gc.collect()
++    assert all(ref() is None for ref in model.saved_refs)
++
++
++@pytest.mark.parametrize("enabled", [False, True])
++@pytest.mark.parametrize("bad_value", [float("nan"), float("inf"), 1e30])
++def test_bad_norm_never_changes_weights_or_adam_moments(enabled, bad_value):
++    model = torch.nn.Linear(2, 1, bias=False)
++    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
++    scaler = torch.amp.GradScaler("cpu", enabled=enabled, init_scale=32.0)
++    scaler.scale(model(torch.ones(1, 2)).sum()).backward()
++    train._optimizer_step(model, optimizer, scaler, 5.0)
++    original = model.weight.detach().clone()
++    state = copy.deepcopy(optimizer.state_dict())
++    model.weight.grad = torch.full_like(model.weight, bad_value)
++    scale = scaler.get_scale()
++    norm, updated = train._optimizer_step(model, optimizer, scaler, 5.0)
++    assert not updated and not np.isfinite(norm)
++    torch.testing.assert_close(model.weight, original, rtol=0, atol=0)
++    for key, value in state["state"][0].items():
++        torch.testing.assert_close(optimizer.state_dict()["state"][0][key], value, rtol=0, atol=0)
++    assert model.weight.grad is None
++    assert scaler.get_scale() == (scale / 2 if enabled else scale)
++    scaler.scale(model(torch.ones(1, 2)).sum()).backward()
++    _, updated = train._optimizer_step(model, optimizer, scaler, 5.0)
++    assert updated
++
++
++def fixture_config(tmp_path, epochs=2):
++    records = []
++    for split, count in (("train", 5), ("val", 2)):
++        for i in range(count):
++            image_path = tmp_path / f"{split}-{i}.png"
++            mask_path = tmp_path / f"{split}-{i}-mask.png"
++            rng = np.random.default_rng(i)
++            Image.fromarray(rng.integers(0, 256, (64, 64, 3), dtype=np.uint8)).save(image_path)
++            mask = np.zeros((64, 64), dtype=np.uint8)
++            if i % 2:
++                mask[16:48, 16:48] = 255
++            Image.fromarray(mask).save(mask_path)
++            records.append(dict(sample_id=f"{split}-{i}", image=str(image_path),
++                                mask=str(mask_path), split=split, label=i % 2,
++                                adn_supervision="proxy"))
++    manifest = tmp_path / "manifest.jsonl"
++    manifest.write_text("".join(json.dumps(record) + "\n" for record in records))
++    config = load_yaml("configs/cpu/smoke.yaml")
++    config["data"] = dict(manifest=str(manifest), batch_size=1, num_workers=0,
++                          image_size=[64, 64], pin_memory=False)
++    config["training"].update(epochs=epochs, cpu_threads=2, amp=False,
++                              gradient_accumulation_steps=4, save_every_epochs=1,
++                              output_dir=str(tmp_path / "run"), selection_metric="pixel/f1")
++    path = tmp_path / "config.yaml"
++    path.write_text(yaml.safe_dump(config))
++    args = argparse.Namespace(config=path, manifest=None, device="cpu", output=None,
++                              resume="auto", fresh=False, epochs=None, log_dir=tmp_path / "logs",
++                              no_progress=True, maximum_train_batches=None, maximum_val_batches=None)
++    return args
++
++
++def test_training_flushes_after_last_skip_and_resumes_unchanged_config(tmp_path, monkeypatch):
++    args = fixture_config(tmp_path)
++    original_config = args.config.read_bytes()
++    original_batch = train._batch_with_precision_recovery
++    calls = 0
++
++    def injected(*args, **kwargs):
++        nonlocal calls
++        calls += 1
++        if calls in (2, 5):
++            return {"total": float("nan"), "adn/total": float("nan")}, {}, ["total", "adn/total"], None
++        return original_batch(*args, **kwargs)
++
++    monkeypatch.setattr(train, "_batch_with_precision_recovery", injected)
++    with RunLogger("train", log_root=args.log_dir, progress_enabled=False) as run:
++        original_info = run.info
++
++        def stop_after_checkpoint(message, *, event="info", **fields):
++            original_info(message, event=event, **fields)
++            if event == "epoch_completed":
++                raise KeyboardInterrupt("test interruption after committed epoch")
++
++        run.info = stop_after_checkpoint
++        with pytest.raises(KeyboardInterrupt):
++            train._train(args, run)
++    checkpoint_path = tmp_path / "run/last.pt"
++    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
++    assert checkpoint["epoch"] == 0 and checkpoint["global_step"] == 1
++    first_row = json.loads((tmp_path / "run/metrics.jsonl").read_text().splitlines()[0])
++    assert first_row["stability"]["accepted_loss_batches"] == 3
++    assert first_row["stability"]["skipped_loss_batches"] == 2
++    assert first_row["stability"]["optimizer_updates"] == 1
++    assert all(int(s["step"]) == 1 for s in checkpoint["optimizer"]["state"].values())
++    # The continuation exercises strict model, optimiser, schedule and RNG load.
++    monkeypatch.setattr(train, "_batch_with_precision_recovery", original_batch)
++    with RunLogger("train", log_root=args.log_dir, progress_enabled=False) as run:
++        result = train._train(args, run)
++    assert result["status"] == "ok" and result["resumed"]
++    resumed = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
++    assert resumed["epoch"] == 1 and resumed["global_step"] == 3
++    assert resumed["contract"] == checkpoint["contract"]
++    assert resumed["scheduler"]["last_epoch"] == 2
++    assert args.config.read_bytes() == original_config
++    assert (tmp_path / "run/epoch-0001.pt").is_file()
++    assert (tmp_path / "run/best.pt").is_file()
++    from deepdocforgery.epoch33_preflight import verify
++
++    before = checkpoint_path.read_bytes()
++    checked = verify(argparse.Namespace(
++        config=args.config, checkpoint=checkpoint_path, device="cpu",
++        expected_completed_epochs=2, probe_batches=4, inject_rejected_forward=False,
++    ))
++    assert checked["config_and_checkpoint_unchanged"]
++    assert checked["completed_epochs"] == 2
++    assert checked["in_memory_updates_discarded"] == 1
++    assert checkpoint_path.read_bytes() == before
++    assert args.config.read_bytes() == original_config
++
++
++def test_preflight_rejects_nonfinite_checkpoint_tensor():
++    from deepdocforgery.epoch33_preflight import check_tensors
++
++    with pytest.raises(ValueError, match=r"optimizer\.state\.1\.exp_avg"):
++        check_tensors({"state": {1: {"exp_avg": torch.tensor([float("nan")])}}}, "optimizer")
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA device required")
++def test_cuda_precision_recovery_releases_graph_before_retry():
++    if not torch.cuda.is_bf16_supported():
++        pytest.skip("BF16-capable GPU required")
++    model = ToyModel(large=True).cuda()
++    values, _, bad, first = train._batch_with_precision_recovery(
++        model, lambda output, _: {"total": output.value.mean()}, toy_batch("cuda"),
++        device=torch.device("cuda"), use_amp=True,
++        scaler=torch.amp.GradScaler("cuda"), accumulation_steps=4, allow_bf16_retry=True,
++    )
++    torch.cuda.synchronize()
++    assert first is not None and not bad and np.isfinite(values["total"])
++    gc.collect()
++    assert all(ref() is None for ref in model.saved_refs)
+--- a/tests/test_postprocess_metrics.py
++++ b/tests/test_postprocess_metrics.py
+@@ -1,4 +1,6 @@
+ from __future__ import annotations
++
++import math
+ 
+ import torch
+ 
+@@ -20,6 +22,19 @@
+ def test_binary_auroc_is_exact_for_separated_scores() -> None:
+     assert binary_auroc([0.1, 0.2, 0.8, 0.9], [0, 0, 1, 1]) == 1.0
+     assert binary_auroc([0.1, 0.2], [0, 0]) is None
++
++
++def test_binary_auroc_rejects_nonfinite_scores_without_looping() -> None:
++    assert binary_auroc([0.1, float("nan"), 0.9], [0, 1, 1]) is None
++    assert binary_auroc([0.1, float("inf"), 0.9], [0, 1, 1]) is None
++
++    metrics = StreamingForgeryMetrics(minimum_instance_area=1)
++    metrics.image_scores = [0.1, float("nan"), 0.9]
++    metrics.image_labels = [0, 1, 1]
++    result = metrics.compute()
++    assert result["image/auroc"] is None
++    assert result["image/non_finite_scores"] == 1
++    assert not math.isnan(result["image/non_finite_scores"])
+ 
+ 
+ def test_streaming_metrics_are_perfect_for_perfect_predictions() -> None:
