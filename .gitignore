@@ -53,6 +53,7 @@ temp/
 *.zip
 .git-credentials
 .github/.git-credentials
+!DeepDocForgery-epoch33-repair-v2.zip
 
 model_today/manifests/*.jsonl
 
