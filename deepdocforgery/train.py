@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import os
 import time
 from collections import Counter, defaultdict
@@ -15,12 +16,13 @@ from typing import Any
 import torch
 import yaml
 
+from deepdocforgery.data import ManifestBatch
 from deepdocforgery.io import load_yaml
 from deepdocforgery.model import DeepDocForgeryModel
 from deepdocforgery.objectives import DeepDocForgeryCriterion
 from deepdocforgery.runtime import (
-    _as_byte_tensor,
     CosineEpochScheduler,
+    _as_byte_tensor,
     atomic_torch_save,
     capture_rng_state,
     create_dataloader,
@@ -226,6 +228,102 @@ def _checkpoint_payload(
     }
 
 
+def _forward_backward_batch(
+    model: DeepDocForgeryModel,
+    criterion: DeepDocForgeryCriterion,
+    batch: ManifestBatch,
+    *,
+    device: torch.device,
+    use_amp: bool,
+    scaler: Any,
+    accumulation_steps: int,
+    amp_dtype: torch.dtype = torch.float16,
+) -> tuple[dict[str, float], dict[str, float], list[str]]:
+    """Keep every batch graph inside one frame, including rejected batches.
+
+    Only Python scalars leave this function. A rejected forward has no
+    backward to release saved tensors, so retaining its output/loss in the
+    outer loop would overlap two complete graphs on the next iteration.
+    """
+    with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=use_amp):
+        output = model(
+            batch.rgb,
+            metadata=batch.metadata,
+            exact_dct=batch.exact_dct,
+            classification_valid=batch.supervision.image_valid,
+        )
+        losses = criterion(output, batch.supervision)
+    values = {name: float(value.detach().cpu()) for name, value in losses.items()}
+    non_finite = [name for name, value in values.items() if not math.isfinite(value)]
+    if non_finite:
+        return values, {}, non_finite
+    scaler.scale(losses["total"] / accumulation_steps).backward()
+    first_level = model.front_end.fusion.level_names[0]
+    with torch.no_grad():
+        attention = {
+            name: float(value.detach().cpu())
+            for name, value in output.front_end.fusion.mean_attention()[first_level].items()
+        }
+    return values, attention, []
+
+
+def _batch_with_precision_recovery(
+    model: DeepDocForgeryModel,
+    criterion: DeepDocForgeryCriterion,
+    batch: ManifestBatch,
+    *,
+    device: torch.device,
+    use_amp: bool,
+    scaler: Any,
+    accumulation_steps: int,
+    allow_bf16_retry: bool,
+) -> tuple[dict[str, float], dict[str, float], list[str], dict[str, float] | None]:
+    """Retry only a non-finite FP16 forward, without changing the loss scale.
+
+    The first helper frame is gone before the retry starts. BF16 has the
+    same storage width as FP16 and wider exponent range; a whole-model FP32
+    retry would exceed the memory budget. Restore model RNGs so dropout is
+    replayed. This architecture uses GroupNorm/LayerNorm, not running-stat
+    BatchNorm, and a rejected forward never updates optimiser state.
+    """
+    rng = capture_rng_state() if use_amp and allow_bf16_retry else None
+    values, attention, bad = _forward_backward_batch(
+        model, criterion, batch, device=device, use_amp=use_amp,
+        scaler=scaler, accumulation_steps=accumulation_steps,
+    )
+    if not bad or rng is None:
+        return values, attention, bad, None
+    first_values = values
+    restore_rng_state(rng)
+    values, attention, bad = _forward_backward_batch(
+        model, criterion, batch, device=device, use_amp=True,
+        scaler=scaler, accumulation_steps=accumulation_steps, amp_dtype=torch.bfloat16,
+    )
+    return values, attention, bad, first_values
+
+
+def _optimizer_step(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scaler: Any,
+    max_norm: float,
+) -> tuple[float, bool]:
+    """Never update weights or Adam moments from a non-finite gradient norm."""
+    scaler.unscale_(optimizer)
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+    finite = bool(torch.isfinite(norm))
+    if finite:
+        scaler.step(optimizer)
+        scaler.update()
+    elif scaler.is_enabled():
+        # Explicitly skip: GradScaler's inf check runs before clipping. A
+        # norm reduction can overflow even when individual grads were finite,
+        # and with AMP disabled scaler.step() is an ordinary optimiser step.
+        scaler.update(new_scale=scaler.get_scale() * scaler.get_backoff_factor())
+    optimizer.zero_grad(set_to_none=True)
+    return float(norm.detach().cpu()), finite
+
+
 def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
     for name in ("maximum_train_batches", "maximum_val_batches"):
         value = getattr(args, name)
@@ -394,6 +492,10 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         minimum_learning_rate=float(training.get("minimum_learning_rate", 1e-6)),
     )
     use_amp = bool(training.get("amp", True)) and device.type == "cuda"
+    allow_bf16_retry = False
+    if use_amp:
+        with torch.cuda.device(device):
+            allow_bf16_retry = torch.cuda.is_bf16_supported()
     try:
         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     except (AttributeError, TypeError):  # PyTorch 2.2 compatibility
@@ -415,6 +517,7 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         learning_rate=learning_rate,
         minimum_learning_rate=float(training.get("minimum_learning_rate", 1e-6)),
         selection_metric=str(training.get("selection_metric", "pixel/f1")),
+        non_finite_forward_retry="bfloat16" if allow_bf16_retry else None,
     )
 
     start_epoch = 0
@@ -425,13 +528,11 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         training.get("max_consecutive_non_finite_grad_steps", 20)
     )
     consecutive_non_finite_loss_batches = 0
-    max_coEOFnsecutive_non_finite_loss_batches = int(
-        training.get("max_consecutive_non_finite_loss_batches", 5)
-    )
-    consecutive_non_finite_loss_batches = 0
     max_consecutive_non_finite_loss_batches = int(
         training.get("max_consecutive_non_finite_loss_batches", 5)
     )
+    if min(max_consecutive_non_finite_steps, max_consecutive_non_finite_loss_batches) < 1:
+        raise ValueError("Non-finite loss/gradient limits must be positive")
     if resume_path is not None:
         checkpoint = load_checkpoint(
             resume_path,
@@ -439,7 +540,9 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             optimizer=optimizer,
             scheduler=scheduler,
             scaler=scaler,
-            map_location=device,
+            # load_state_dict copies weights and moves optimiser state to the
+            # parameter device. Avoid keeping a second model copy in VRAM.
+            map_location="cpu",
         )
         saved_contract = checkpoint.get("contract")
         if saved_contract is None:
@@ -500,6 +603,7 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 checkpoint=str(resume_path.resolve()),
                 last_checkpoint=str((output_dir / "last.pt").resolve()),
             )
+        del checkpoint, saved_generator_state
 
     metric_name = str(training.get("selection_metric", "pixel/f1"))
     log_path = output_dir / "metrics.jsonl"
@@ -522,6 +626,49 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         final_gradient_norm = 0.0
         final_attention: dict[str, float] = {}
         processed_batches = 0
+        pending_batches = 0
+        skipped_loss_batches = 0
+        skipped_gradient_steps = 0
+        optimizer_updates = 0
+        bf16_retry_batches = 0
+        bf16_recovered_batches = 0
+
+        def finish_accumulation(batch_index: int, epoch: int = epoch) -> None:
+            nonlocal global_step, final_gradient_norm, consecutive_non_finite_steps
+            nonlocal skipped_gradient_steps, optimizer_updates
+            scale_before = float(scaler.get_scale())
+            gradient_norm, updated = _optimizer_step(
+                model, optimizer, scaler, float(training.get("gradient_clip_norm", 5.0))
+            )
+            # Historical checkpoints count step attempts here, including AMP
+            # skips. Retain that meaning and report successful updates apart.
+            global_step += 1
+            if updated:
+                consecutive_non_finite_steps = 0
+                final_gradient_norm = gradient_norm
+                optimizer_updates += 1
+                return
+            skipped_gradient_steps += 1
+            consecutive_non_finite_steps += 1
+            run.warning(
+                f"Non-finite gradient at epoch {epoch + 1}, batch {batch_index + 1}; "
+                f"optimiser step skipped ({consecutive_non_finite_steps}/"
+                f"{max_consecutive_non_finite_steps} consecutive)",
+                event="non_finite_gradient_skipped",
+                epoch=epoch + 1,
+                batch=batch_index + 1,
+                batch_index=batch_index,
+                consecutive_non_finite_steps=consecutive_non_finite_steps,
+                scale=scale_before,
+                next_scale=float(scaler.get_scale()),
+            )
+            if consecutive_non_finite_steps >= max_consecutive_non_finite_steps:
+                raise RuntimeError(
+                    f"{consecutive_non_finite_steps} consecutive non-finite gradients "
+                    f"through epoch {epoch + 1}, batch {batch_index + 1}; "
+                    "stopping without overwriting the last completed checkpoint."
+                )
+
         dataset_draws: Counter[str] = Counter()
         exact_dct_samples = 0
         supervision_draws: Counter[str] = Counter()
@@ -556,96 +703,75 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                 supervision_draws["noise_degradation"] += int(
                     (batch.supervision.degradation.noise_valid.flatten(1).sum(1) > 0).sum().item()
                 )
-            with torch.autocast(
-                device_type=device.type,
-                dtype=torch.float16,
-                enabled=use_amp,
-            ):
-                output = model(
-                    batch.rgb,
-                    metadata=batch.metadata,
-                    exact_dct=batch.exact_dct,
-                    classification_valid=batch.supervision.image_valid,
+            loss_values, attention, non_finite, first_losses = _batch_with_precision_recovery(
+                model, criterion, batch, device=device, use_amp=use_amp,
+                scaler=scaler, accumulation_steps=accumulation_steps,
+                allow_bf16_retry=allow_bf16_retry,
+            )
+            if first_losses is not None:
+                bf16_retry_batches += 1
+                bf16_recovered_batches += int(not non_finite)
+                run.warning(
+                    f"Epoch {epoch + 1}, batch {batch_index + 1}: non-finite FP16 loss; "
+                    f"BF16 retry {'recovered' if not non_finite else 'also non-finite'}",
+                    event="non_finite_loss_precision_retry",
+                    epoch=epoch + 1,
+                    batch=batch_index + 1,
+                    batch_index=batch_index,
+                    recovered=not non_finite,
+                    original_non_finite_components=[
+                        name for name, value in first_losses.items() if not math.isfinite(value)
+                    ],
+                    original_losses={name: value if math.isfinite(value) else str(value)
+                                     for name, value in first_losses.items()},
+                    samples=[record.sample_id for record in batch.records],
                 )
-                losses = criterion(output, batch.supervision)
-                scaled_loss = losses["total"] / accumulation_steps
-            if not bool(torch.isfinite(losses["total"])):
+            if non_finite:
                 bad_samples = [
                     {"sample_id": record.sample_id, "image": record.image}
                     for record in batch.records
                 ]
                 consecutive_non_finite_loss_batches += 1
+                skipped_loss_batches += 1
                 run.warning(
-                    f"Non-finite loss at epoch {epoch}, batch {batch_index}; skipping batch "
+                    f"Non-finite loss at epoch {epoch + 1}, batch {batch_index + 1}; "
+                    f"components={','.join(non_finite)}; skipping batch "
                     f"({consecutive_non_finite_loss_batches}/"
                     f"{max_consecutive_non_finite_loss_batches} consecutive)",
                     event="non_finite_loss_skipped",
-                    epoch=epoch,
-                    batch=batch_index,
+                    epoch=epoch + 1,
+                    batch=batch_index + 1,
+                    batch_index=batch_index,
+                    non_finite_components=non_finite,
+                    losses={name: value if math.isfinite(value) else str(value)
+                            for name, value in loss_values.items()},
                     consecutive_non_finite_loss_batches=consecutive_non_finite_loss_batches,
                     samples=bad_samples,
                 )
                 if consecutive_non_finite_loss_batches >= max_consecutive_non_finite_loss_batches:
                     raise RuntimeError(
                         f"{consecutive_non_finite_loss_batches} consecutive non-finite-loss "
-                        f"batches through epoch {epoch}, batch {batch_index}; this is beyond "
+                        f"batches through epoch {epoch + 1}, batch {batch_index + 1}; this is beyond "
                         "an isolated bad sample and likely indicates real divergence "
                         "(check learning rate, loss weights, or data)."
                     )
+                # The helper has already released the failed graph. Keep the
+                # gradients from earlier valid microbatches and their scale.
+                del batch
                 continue
             consecutive_non_finite_loss_batches = 0
-            scaler.scale(scaled_loss).backward()
             processed_batches += 1
-            should_step = processed_batches % accumulation_steps == 0
-            is_last_batch = batch_index + 1 == total_train_batches
-            if should_step or is_last_batch:
-                scaler.unscale_(optimizer)
-                gradient_norm = torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), float(training.get("gradient_clip_norm", 5.0))
-                )
-                # A non-finite gradient here is expected, normal behaviour while
-                # GradScaler calibrates its loss-scale factor early in training (or
-                # occasionally afterwards) -- that is exactly what scaler.step()/
-                # scaler.update() below are designed to absorb: step() skips the
-                # optimizer update for this batch and update() backs off the scale.
-                # Only a *persistent* run of non-finite gradients indicates a real
-                # divergence problem worth stopping for.
-                if not bool(torch.isfinite(gradient_norm)):
-                    consecutive_non_finite_steps += 1
-                    run.warning(
-                        f"Non-finite gradient at epoch {epoch}, batch {batch_index} "
-                        f"(scaler backing off scale; {consecutive_non_finite_steps}/"
-                        f"{max_consecutive_non_finite_steps} consecutive)",
-                        event="non_finite_gradient_skipped",
-                        epoch=epoch,
-                        batch=batch_index,
-                        consecutive_non_finite_steps=consecutive_non_finite_steps,
-                        scale=float(scaler.get_scale()),
-                    )
-                    if consecutive_non_finite_steps >= max_consecutive_non_finite_steps:
-                        raise RuntimeError(
-                            f"{consecutive_non_finite_steps} consecutive non-finite gradients "
-                            f"through epoch {epoch}, batch {batch_index}; this is beyond normal "
-                            "AMP loss-scale calibration and likely indicates a real divergence "
-                            "(check learning rate, loss weights, or data)."
-                        )
-                else:
-                    consecutive_non_finite_steps = 0
-                    final_gradient_norm = float(gradient_norm.detach().cpu())
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad(set_to_none=True)
-                global_step += 1
+            pending_batches += 1
+            if pending_batches == accumulation_steps:
+                finish_accumulation(batch_index)
+                pending_batches = 0
 
             batch_size = batch.rgb.shape[0]
             example_count += batch_size
-            for name, value in losses.items():
-                loss_sums[name] += float(value.detach().cpu()) * batch_size
-            first_level = model.front_end.fusion.level_names[0]
-            final_attention = {
-                name: float(value.detach().cpu())
-                for name, value in output.front_end.fusion.mean_attention()[first_level].items()
-            }
+            for name, value in loss_values.items():
+                loss_sums[name] += value * batch_size
+            final_attention = attention
+            del batch
             completed_batches = batch_index + 1
             should_report = completed_batches == total_train_batches or (
                 resource_interval > 0 and completed_batches % resource_interval == 0
@@ -671,6 +797,10 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
                     resources=snapshot,
                 )
         progress.close()
+        # Flush valid accumulated gradients even if the last fetched batch was
+        # rejected. Retain the original /accumulation_steps tail weighting.
+        if pending_batches:
+            finish_accumulation(total_train_batches - 1)
         training_duration = max(time.perf_counter() - training_started, 1e-9)
         if processed_batches == 0:
             raise RuntimeError("No training batches were processed")
@@ -714,6 +844,14 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             "dataset_draws": dict(dataset_draws),
             "exact_dct_samples": exact_dct_samples,
             "supervision_draws": dict(supervision_draws),
+            "stability": {
+                "accepted_loss_batches": processed_batches,
+                "skipped_loss_batches": skipped_loss_batches,
+                "skipped_gradient_steps": skipped_gradient_steps,
+                "optimizer_updates": optimizer_updates,
+                "bf16_retry_batches": bf16_retry_batches,
+                "bf16_recovered_batches": bf16_recovered_batches,
+            },
             "train": {name: value / max(1, example_count) for name, value in loss_sums.items()},
             "validation": validation,
             "resources": resource_snapshot(device),
@@ -769,6 +907,7 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
         save_every = int(training.get("save_every_epochs", 0))
         if save_every > 0 and (epoch + 1) % save_every == 0:
             atomic_torch_save(payload, output_dir / f"epoch-{epoch + 1:04d}.pt")
+        del payload
         epoch_loss = record["train"].get("total", float("nan"))
         validation_precision = validation.get("pixel/precision")
         validation_recall = validation.get("pixel/recall")

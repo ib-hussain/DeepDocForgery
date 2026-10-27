@@ -220,6 +220,11 @@ class SynergyDenoisingDecoder(nn.Module):
 
     @staticmethod
     def _weighted_pool(features: Tensor, weights: Tensor) -> Tensor:
+        # A finite weighted mean can have a sum outside FP16's range. Keep
+        # the product, reductions and division in FP32; AMP still applies to
+        # the following classifier layers and the large convolutional maps.
+        features = features.float()
+        weights = weights.float()
         numerator = (features * weights).sum(dim=(-2, -1))
         denominator = weights.sum(dim=(-2, -1)).clamp_min(1e-6)
         return numerator / denominator

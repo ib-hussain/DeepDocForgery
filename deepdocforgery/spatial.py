@@ -697,7 +697,8 @@ class ArtifactDecouplingLoss(nn.Module):
         selected = features.permute(0, 2, 3, 1)[mask.squeeze(1).bool()]
         if selected.numel() == 0:
             return None
-        return F.normalize(selected.mean(dim=0), dim=0)
+        # Prototype reductions and normalisation need FP32 range under AMP.
+        return F.normalize(selected.float().mean(dim=0), dim=0)
 
     def _attract_and_separate(
         self,
@@ -723,7 +724,11 @@ class ArtifactDecouplingLoss(nn.Module):
         output: SpatialBranchOutput,
         targets: ADNSupervision,
     ) -> dict[str, Tensor]:
-        logits = output.adn_auxiliary_logits
+        # The auxiliary head remains in AMP. Only this small loss map is FP32.
+        # This also makes direct half-precision callers safe without relying
+        # on CUDA autocast's reduction policy. This guard alone does not
+        # diagnose a non-finite loss produced inside CUDA autocast.
+        logits = output.adn_auxiliary_logits.float()
         artifact = self._map(targets.artifact_mask, logits.shape[-2:])
         valid = (
             torch.ones_like(artifact)
@@ -735,7 +740,7 @@ class ArtifactDecouplingLoss(nn.Module):
             dim=1
         ).clamp_min(1.0)
         sample_valid = valid.flatten(1).sum(dim=1) > 0
-        zero = logits.sum() * 0.0
+        zero = (logits * 0.0).sum()
 
         if targets.domain_index is None:
             text_bce = sample_loss[sample_valid].mean() if bool(sample_valid.any()) else zero

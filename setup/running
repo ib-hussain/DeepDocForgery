@@ -2,3 +2,308 @@ bash temp/max_performance.sh && \
 sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda && \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train \
   --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume
+
+
+
+
+
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -c 'import sys,torch; print(sys.executable); print(torch.__version__); print("CUDA:",torch.cuda.is_available()); assert torch.cuda.is_available()'
+/home/fastlab/deepFakeDetection/DeepDocForgery/.venv-cuda/bin/python
+2.11.0+cu128
+CUDA: True
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ nvidia-smi
+Tue Oct 27 06:47:39 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA RTX 4000 Ada Gene...    Off |   00000000:01:00.0  On |                  Off |
+| 30%   30C    P8             12W /  130W |     340MiB /  20475MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            2813      G   /usr/lib/xorg/Xorg                       93MiB |
+|    0   N/A  N/A            3170      G   /usr/bin/gnome-shell                     88MiB |
+|    0   N/A  N/A            6366      G   ...rack-uuid=3190708988185955192         98MiB |
++-----------------------------------------------------------------------------------------+
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ findmnt -T output/processed/cuda
+TARGET                          SOURCE    FSTYPE  OPTIONS
+/home/fastlab/deepFakeDetection /dev/sda1 fuseblk rw,relatime,user_id=0,group_id=0,default_permissions,allow_other,blksize=4096
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda 
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ findmnt -T output/processed/cuda
+TARGET                                                               SOURCE         FSTYPE OPTIONS
+/home/fastlab/deepFakeDetection/DeepDocForgery/output/processed/cuda /dev/nvme0n1p5 ext4   rw,relatime
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ test -r output/processed/cuda/doctamper/DocTamperV1-TrainingSet/images/000000000.jpg && test -r output/processed/cuda/doctamper/DocTamperV1-TrainingSet/masks/000000000.png && echo 'Processed sample is available'
+Processed sample is available
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ test -s output/model/cuda-full/last.pt && test -s output/manifests/cuda.jsonl && echo 'Checkpoint and manifest are available'
+Checkpoint and manifest are available
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ cp --reflink=auto --no-clobber output/model/cuda-full/last.pt output/model/cuda-full/last-before-epoch33-repair.pt
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python DeepDocForgery-epoch33-repair/apply_repair.py  --repo . --check
+{
+  "status": "compatible",
+  "files_to_change": [
+    "deepdocforgery/train.py",
+    "deepdocforgery/spatial.py",
+    "deepdocforgery/decoder.py",
+    "deepdocforgery/epoch33_preflight.py",
+    "tests/test_epoch33_recovery.py"
+  ],
+  "config_sha256": "a3f515af94fdd3b23360f5f53cd6c29d81fecc6e6b9312050fa37cdd18b7ee8f"
+}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python DeepDocForgery-epoch33-repair/apply_repair.py  --repo .
+{
+  "status": "installed",
+  "backup": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/recovery/epoch33-code-20261027T064953.550553Z",
+  "config_unchanged": true,
+  "files": [
+    "deepdocforgery/train.py",
+    "deepdocforgery/spatial.py",
+    "deepdocforgery/decoder.py",
+    "deepdocforgery/epoch33_preflight.py",
+    "tests/test_epoch33_recovery.py"
+  ]
+}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery.epoch33_preflight --config configs/cuda/HPO_RESULTS.yaml --checkpoint output/model/cuda-full/last.pt --device cuda --expected-completed-epochs 32
+{
+  "checkpoint_sha256": "27f841c60df62fc7cfb5b842f077f078d91d63c293cd9dabb35b22e6d3bce1fc",
+  "completed_epochs": 32,
+  "config_and_checkpoint_unchanged": true,
+  "config_sha256": "a3f515af94fdd3b23360f5f53cd6c29d81fecc6e6b9312050fa37cdd18b7ee8f",
+  "finite_state_tensors": 2669,
+  "global_step": 78848,
+  "gradient_accumulation_steps": 4,
+  "next_epoch": 33,
+  "physical_batch_size": 11,
+  "probe_batches": 0,
+  "saved_learning_rates": [
+    2.9423925067528905e-05,
+    7.890648501219129e-06
+  ],
+  "status": "ok"
+}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python -m deepdocforgery doctor --profile cuda --config configs/cuda/HPO_RESULTS.yaml --no-progress
+06:51:15 | INFO    | STARTED
+06:51:15 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20261027T065115Z-8695-66ccbb.log
+06:51:15 | INFO    | Doctor profile=cuda | config=configs/cuda/HPO_RESULTS.yaml | CPU threads=28
+06:51:15 | INFO    | CPU 19% | RAM 4.2/31.0G | RSS 0.6G | VRAM 0.5/19.5G | GPU 4% | temp 31C | alloc/reserved/peak 0.0/0.0/0.0G
+06:51:15 | INFO    | Previous doctor state found; volatile checks will be refreshed
+06:51:15 | INFO    | Runtime check: passed
+06:51:19 | INFO    | Dependency check: passed
+06:51:26 | INFO    | Manifest check: passed
+06:51:26 | INFO    | Protocol check: passed
+06:51:26 | INFO    | SUCCEEDED | CPU 4% | RAM 4.5/31.0G | RSS 0.8G | VRAM 0.5/19.5G | GPU 0% | temp 33C | alloc/reserved/peak 0.0/0.0/0.0G
+{
+  "checks": {
+    "compute": {
+      "logical_cpus": 28,
+      "physical_cpus": 20,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "28",
+        "MKL_NUM_THREADS": "28",
+        "NUMEXPR_NUM_THREADS": "28",
+        "OMP_NUM_THREADS": "28",
+        "OPENBLAS_NUM_THREADS": "28",
+        "VECLIB_MAXIMUM_THREADS": "28"
+      },
+      "torch_interop_threads": 4,
+      "torch_threads": 28
+    },
+    "config": "/home/fastlab/deepFakeDetection/DeepDocForgery/configs/cuda/HPO_RESULTS.yaml",
+    "cuda_available": true,
+    "data_workers": 20,
+    "dependency/jpegio": true,
+    "dependency/lmdb": true,
+    "dependency/pip_check": "No broken requirements found.",
+    "dependency/timm": true,
+    "gpu": "NVIDIA RTX 4000 Ada Generation",
+    "manifest": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/manifests/cuda.jsonl",
+    "manifest_files": {
+      "missing_preview": [],
+      "missing_references": 0,
+      "records_checked": 179000,
+      "references_checked": 358000,
+      "workers": 20
+    },
+    "manifest_summary": {
+      "adn_supervision": {
+        "proxy": 179000
+      },
+      "benchmarks": {
+        "doctamper-fcd": 2000,
+        "doctamper-scd": 18000,
+        "doctamper-testing": 30000,
+        "doctamper-training": 120000,
+        "midv-dm": 9000
+      },
+      "classification_supervised": 9000,
+      "datasets": {
+        "doctamper": 170000,
+        "midv": 9000
+      },
+      "degradation_supervised": 0,
+      "exif_transposed_images": 500,
+      "groups": 125986,
+      "labels": {
+        "test": {
+          "0": 168,
+          "1": 51344
+        },
+        "train": {
+          "0": 692,
+          "1": 107691
+        },
+        "val": {
+          "0": 140,
+          "1": 18965
+        }
+      },
+      "localization_supervised": 179000,
+      "samples": 179000,
+      "scale_aligned_masks": 0,
+      "splits": {
+        "test": 51512,
+        "train": 108383,
+        "val": 19105
+      }
+    },
+    "protocol/split_counts": {
+      "test": 51512,
+      "train": 108383,
+      "val": 19105
+    },
+    "protocol/training_datasets": [
+      "doctamper",
+      "midv"
+    ],
+    "protocol/training_localization_supervised": 108383,
+    "python_torch": "2.11.0+cu128",
+    "resources": {
+      "cpu": {
+        "logical": 28,
+        "physical": 20,
+        "process_percent": 71.2,
+        "system_percent": 4.2
+      },
+      "cuda": {
+        "allocated_gib": 0.0,
+        "device": 0,
+        "device_free_gib": 19.024,
+        "device_total_gib": 19.54,
+        "device_used_gib": 0.516,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "nvidia_smi": {
+          "compute_processes": [
+            {
+              "name": "python",
+              "pid": 8695,
+              "used_vram_gib": 0.156
+            }
+          ],
+          "index": 0,
+          "memory_free_gib": 19.024,
+          "memory_total_gib": 19.995,
+          "memory_used_gib": 0.517,
+          "name": "NVIDIA RTX 4000 Ada Generation",
+          "power_draw_w": 14.05,
+          "power_limit_w": 130.0,
+          "temperature_c": 31.0,
+          "utilization_percent": 4.0
+        },
+        "peak_allocated_gib": 0.0,
+        "reserved_gib": 0.0
+      },
+      "ram": {
+        "process_rss_gib": 0.495,
+        "system_available_gib": 26.886,
+        "system_percent": 13.4,
+        "system_total_gib": 31.029,
+        "system_used_gib": 4.143
+      }
+    },
+    "stages": {
+      "dependencies": "passed",
+      "manifest": "passed",
+      "protocol": "passed",
+      "runtime": "passed"
+    },
+    "vram_gib": 19.54
+  },
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20261027T065115Z-8695-66ccbb.jsonl",
+  "issues": [],
+  "profile": "cuda",
+  "report": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor-cuda.json",
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 88.4,
+      "system_percent": 4.0
+    },
+    "cuda": {
+      "allocated_gib": 0.0,
+      "device": 0,
+      "device_free_gib": 19.034,
+      "device_total_gib": 19.54,
+      "device_used_gib": 0.506,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 8695,
+            "used_vram_gib": 0.156
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 19.034,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 0.506,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 30.86,
+        "power_limit_w": 130.0,
+        "temperature_c": 33.0,
+        "utilization_percent": 0.0
+      },
+      "peak_allocated_gib": 0.0,
+      "reserved_gib": 0.0
+    },
+    "ram": {
+      "process_rss_gib": 0.814,
+      "system_available_gib": 26.52,
+      "system_percent": 14.5,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.508
+    }
+  },
+  "status": "ok",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20261027T065115Z-8695-66ccbb.log"
+}
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_epoch33_recovery.py tests/test_resume_v051.py
+........................                                                                                                                        [100%]
+24 passed in 21.95s
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls
+CHANGELOG.md    deep_doc_forgery.egg-info      MIGRATION.md    README.md              requirements.txt  tests
+configs         DeepDocForgery-epoch33-repair  model_today     repos                  researchPapers    third_party_certificates
+data            ignore.txt                     output          requirements-data.txt  setup             workflow.jpeg
+deepdocforgery  LICENSE                        pyproject.toml  requirements-dev.txt   temp
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
+06:53:06 | INFO    | STARTED
+06:53:06 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261027T065306Z-9090-11d231.log
+06:53:07 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+06:53:07 | INFO    | CPU 13% | RAM 4.1/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 32C | alloc/reserved/peak 0.0/0.0/0.0G
+06:53:14 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+06:53:14 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+06:53:23 | INFO    | Model ready: 51,474,589 trainable parameters
+06:53:23 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+06:53:24 | INFO    | Resumed after epoch 32/50 from /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt
+06:53:24 | INFO    | Epoch 33/50 started
+Train 33/50:   0%|▍                                                                                            | 43/9853 [01:56<2:29:24,  1.09batch/s]
