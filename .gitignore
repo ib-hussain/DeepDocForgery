@@ -55,6 +55,6 @@ temp/
 .github/.git-credentials
 ignore**
 model_today/manifests/*.jsonl
-
+!DeepDocForgery_epoch33_recovery_tools.zip
 *stress**/
 setup/running
