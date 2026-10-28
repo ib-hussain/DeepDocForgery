@@ -1,0 +1,56 @@
+{
+  "command": "train",
+  "error": "Missing dataset files: [PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000000.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000000.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000001.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000001.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-midv/images/authentic/alb_id/01.jpg')]",
+  "error_type": "FileNotFoundError",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034012Z-7907-27fcaa.jsonl",
+  "last_checkpoint": null,
+  "resources": {
+    "cpu": {
+      "logical": 28,
+      "physical": 20,
+      "process_percent": 129.3,
+      "system_percent": 4.7
+    },
+    "cuda": {
+      "allocated_gib": 0.0,
+      "device": 0,
+      "device_free_gib": 19.003,
+      "device_total_gib": 19.54,
+      "device_used_gib": 0.536,
+      "name": "NVIDIA RTX 4000 Ada Generation",
+      "nvidia_smi": {
+        "compute_processes": [
+          {
+            "name": "python",
+            "pid": 7907,
+            "used_vram_gib": 0.156
+          }
+        ],
+        "index": 0,
+        "memory_free_gib": 19.004,
+        "memory_total_gib": 19.995,
+        "memory_used_gib": 0.537,
+        "name": "NVIDIA RTX 4000 Ada Generation",
+        "power_draw_w": 11.68,
+        "power_limit_w": 130.0,
+        "temperature_c": 29.0,
+        "utilization_percent": 0.0
+      },
+      "peak_allocated_gib": 0.0,
+      "reserved_gib": 0.0
+    },
+    "ram": {
+      "process_rss_gib": 0.498,
+      "system_available_gib": 26.397,
+      "system_percent": 14.9,
+      "system_total_gib": 31.029,
+      "system_used_gib": 4.632
+    }
+  },
+  "resume_command": "python -m deepdocforgery train --config configs/cpu/sample.yaml --device auto --output /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cpu-sample --log-dir output/logs",
+  "run_id": "20261028T034012Z-7907-27fcaa",
+  "started_at": "2026-10-28T03:40:12+00:00",
+  "status": "failed",
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034012Z-7907-27fcaa.log",
+  "updated_at": "2026-10-28T03:40:13+00:00"
+}

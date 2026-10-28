@@ -4,7 +4,38 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train 
 --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
 
 
-python - <<'PY'
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train && 
+--config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/epoch33_EMERGENCY.pt 
+03:40:12 | INFO    | STARTED
+03:40:12 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034012Z-7907-27fcaa.log
+03:40:12 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:40:13 | INFO    | CPU 5% | RAM 4.6/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G
+03:40:13 | ERROR   | FAILED: Missing dataset files: [PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000000.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000000.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000001.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000001.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-midv/images/authentic/alb_id/01.jpg')]
+03:40:13 | ERROR   | FAILED | CPU 5% | RAM 4.6/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 54, in <module>
+    main()
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/__main__.py", line 33, in main
+    module.main()
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/train.py", line 1024, in main
+    result = _train(args, run)
+             ^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/train.py", line 415, in _train
+    train_loader = create_dataloader(config, split="train", shuffle=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/runtime.py", line 164, in create_dataloader
+    dataset = ForgeryManifestDataset(
+              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/data.py", line 546, in __init__
+    raise FileNotFoundError(f"Missing dataset files: {missing[:5]}")
+FileNotFoundError: Missing dataset files: [PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000000.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000000.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000001.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000001.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-midv/images/authentic/alb_id/01.jpg')]
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls data/
+copy_dataset_sample.py  dataset-dancetext  dataset-doctamper  dataset-midv  README.md  sample-dancetext  sample-doctamper  sample-midv
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls output/processed/cuda/
+doctamper  lost+found  midv
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ python - <<'PY'
 import torch
 
 path = "output/model/cuda-full/epoch33_EMERGENCY.pt"
@@ -26,9 +57,153 @@ print("Examples:", bad[:10])
 print("Scheduler:", ckpt["scheduler_state_dict"])
 print("Contract:", ckpt["contract"])
 PY
-
-echo "===== CHECKPOINT SAVE FUNCTION ====="
+Saved epoch: 33
+Optimizer parameters: 667
+Non-finite optimizer tensors: 0
+Examples: []
+Scheduler: {'last_epoch': 33, 'total_epochs': 50, 'base_lrs': [0.0001, 2.5e-05], 'minimum_learning_rate': 1e-06}
+Contract: cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ echo "===== CHECKPOINT SAVE FUNCTION ====="
 sed -n '200,245p' deepdocforgery/train.py
+===== CHECKPOINT SAVE FUNCTION =====
+def _checkpoint_payload(
+    *,
+    model: DeepDocForgeryModel,
+    optimizer: torch.optim.Optimizer,
+    scheduler: Any,
+    scaler: Any,
+    config: dict[str, Any],
+    epoch: int,
+    global_step: int,
+    best_metric: float,
+    validation: dict[str, float | None],
+    contract: str,
+    data_generator_state: torch.Tensor | None,
+) -> dict[str, Any]:
+    return {
+        "format_version": 2,
+        "model": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "scheduler": scheduler.state_dict(),
+        "scaler": scaler.state_dict(),
+        "config": config,
+        "epoch": epoch,
+        "global_step": global_step,
+        "best_metric": best_metric,
+        "validation": validation,
+        "contract": contract,
+        "rng_state": capture_rng_state(),
+        "data_generator_state": data_generator_state,
+    }
 
-echo "===== CHECKPOINT RESTORE FUNCTION ====="
+
+def _forward_backward_batch(
+    model: DeepDocForgeryModel,
+    criterion: DeepDocForgeryCriterion,
+    batch: ManifestBatch,
+    *,
+    device: torch.device,
+    use_amp: bool,
+    scaler: Any,
+    accumulation_steps: int,
+    amp_dtype: torch.dtype = torch.float16,
+) -> tuple[dict[str, float], dict[str, float], list[str]]:
+    """Keep every batch graph inside one frame, including rejected batches.
+
+    Only Python scalars leave this function. A rejected forward has no
+    backward to release saved tensors, so retaining its output/loss in the
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ echo "===== CHECKPOINT RESTORE FUNCTION ====="
 sed -n '520,610p' deepdocforgery/train.py
+===== CHECKPOINT RESTORE FUNCTION =====
+        non_finite_forward_retry="bfloat16" if allow_bf16_retry else None,
+    )
+
+    start_epoch = 0
+    global_step = 0
+    best_metric = float("-inf")
+    consecutive_non_finite_steps = 0
+    max_consecutive_non_finite_steps = int(
+        training.get("max_consecutive_non_finite_grad_steps", 20)
+    )
+    consecutive_non_finite_loss_batches = 0
+    max_consecutive_non_finite_loss_batches = int(
+        training.get("max_consecutive_non_finite_loss_batches", 5)
+    )
+    if min(max_consecutive_non_finite_steps, max_consecutive_non_finite_loss_batches) < 1:
+        raise ValueError("Non-finite loss/gradient limits must be positive")
+    if resume_path is not None:
+        checkpoint = load_checkpoint(
+            resume_path,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            scaler=scaler,
+            # load_state_dict copies weights and moves optimiser state to the
+            # parameter device. Avoid keeping a second model copy in VRAM.
+            map_location="cpu",
+        )
+        saved_contract = checkpoint.get("contract")
+        if saved_contract is None:
+            saved_config = checkpoint.get("config")
+            if not isinstance(saved_config, dict):
+                raise ValueError("Legacy checkpoint has no configuration for compatibility checks")
+            saved_contract = _training_contract(
+                saved_config,
+                maximum_train_batches=args.maximum_train_batches,
+                maximum_val_batches=args.maximum_val_batches,
+                device=str(device),
+            )
+        if saved_contract != contract:
+            raise ValueError(
+                "Checkpoint configuration/data do not match this training run. "
+                "Use the original config and manifest, or start a documented fresh run."
+            )
+        start_epoch = int(checkpoint.get("epoch", -1)) + 1
+        global_step = int(checkpoint.get("global_step", 0))
+        best_metric = float(checkpoint.get("best_metric", best_metric))
+        if start_epoch > epochs:
+            raise ValueError(
+                f"Checkpoint has completed {start_epoch} epochs but this run requests {epochs}"
+            )
+        restored_rng = restore_rng_state(checkpoint.get("rng_state"))
+        loader_generator = getattr(train_loader, "generator", None)
+        saved_generator_state = checkpoint.get("data_generator_state")
+        if loader_generator is not None and saved_generator_state is not None:
+            loader_generator.set_state(_as_byte_tensor(saved_generator_state))
+        _reconcile_metrics(output_dir / "metrics.jsonl", start_epoch)
+        run.info(
+            f"Resumed after epoch {start_epoch}/{epochs} from {resume_path.resolve()}",
+            event="checkpoint_resumed",
+            checkpoint=str(resume_path.resolve()),
+            next_epoch=None if start_epoch == epochs else start_epoch + 1,
+            global_step=global_step,
+            best_metric=best_metric,
+            rng_restored=restored_rng,
+        )
+        if not restored_rng:
+            run.warning(
+                "Legacy checkpoint has no RNG state; weights and optimiser are restored, but "
+                "the next epoch will not be bit-for-bit reproducible.",
+                event="legacy_checkpoint_resumed",
+                checkpoint=str(resume_path.resolve()),
+            )
+        if start_epoch == epochs and not (output_dir / "last.pt").is_file():
+            # An explicitly supplied checkpoint may already have finished the
+            # requested schedule but live outside this output directory. Keep
+            # the local run self-contained instead of reporting a missing
+            # latest checkpoint.
+            atomic_torch_save(checkpoint, output_dir / "last.pt")
+            if not (output_dir / "best.pt").is_file():
+                atomic_torch_save(checkpoint, output_dir / "best.pt")
+            run.info(
+                "Completed external checkpoint adopted into this run directory",
+                event="checkpoint_adopted",
+                checkpoint=str(resume_path.resolve()),
+                last_checkpoint=str((output_dir / "last.pt").resolve()),
+            )
+        del checkpoint, saved_generator_state
+
+    metric_name = str(training.get("selection_metric", "pixel/f1"))
+    log_path = output_dir / "metrics.jsonl"
+    logging_config = config.get("logging", {})
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
