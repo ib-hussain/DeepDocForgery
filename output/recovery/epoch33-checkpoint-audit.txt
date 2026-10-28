@@ -1,0 +1,46 @@
+
+=== NATIVE EPOCH-32: output/model/cuda-full/last.pt (618,590,951 bytes) ===
+sha256: 27f841c60df62fc7cfb5b842f077f078d91d63c293cd9dabb35b22e6d3bce1fc
+TOP LEVEL KEYS: ['format_version', 'model', 'optimizer', 'scheduler', 'scaler', 'config', 'epoch', 'global_step', 'best_metric', 'validation', 'contract', 'rng_state', 'data_generator_state']
+  format_version: 2
+  model: {'type': 'dict', 'size': 668, 'keys_sample': ['front_end.forensics.dct_branch.pixel_dct.dct_matrix', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.2.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.2.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.2.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.2.bias', 'front_end.forensics.dct_branch.colour_stems.2.layers.0.0.weight']}
+  optimizer: {'type': 'dict', 'size': 2, 'keys_sample': ['state', 'param_groups']}
+  scheduler: {'type': 'dict', 'size': 4, 'keys_sample': ['last_epoch', 'total_epochs', 'base_lrs', 'minimum_learning_rate']}
+  scaler: {'type': 'dict', 'size': 5, 'keys_sample': ['scale', 'growth_factor', 'backoff_factor', 'growth_interval', '_growth_tracker']}
+  config: {'type': 'dict', 'size': 7, 'keys_sample': ['runtime', 'data', 'model', 'loss', 'training', 'metrics', 'logging']}
+  epoch: 31
+  global_step: 78848
+  best_metric: 0.8114558513227331
+  contract: cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1
+  rng_state: {'type': 'dict', 'size': 4, 'keys_sample': ['python', 'numpy', 'torch', 'cuda']}
+MODEL FINITENESS: {
+  "model_key": "model",
+  "total_tensors": 668,
+  "nonfinite_tensors": [],
+  "model_entries": 668
+}
+
+=== RESCUED EPOCH-33: output/model/cuda-full/epoch33_EMERGENCY.pt (618,591,809 bytes) ===
+sha256: 62419ffb745121e6df5667b99101c26f35287513b8cb10ff1fd7253951816ace
+TOP LEVEL KEYS: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'scheduler_state_dict', 'best_metric', 'contract', 'rescue']
+  epoch: 33
+  model_state_dict: {'type': 'dict', 'size': 668, 'keys_sample': ['front_end.forensics.dct_branch.pixel_dct.dct_matrix', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.1.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.2.weight', 'front_end.forensics.dct_branch.colour_stems.0.layers.1.block.2.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.0.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.0.1.bias', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.1.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.2.weight', 'front_end.forensics.dct_branch.colour_stems.1.layers.1.block.2.bias', 'front_end.forensics.dct_branch.colour_stems.2.layers.0.0.weight']}
+  optimizer_state_dict: {'type': 'dict', 'size': 2, 'keys_sample': ['state', 'param_groups']}
+  scheduler_state_dict: {'type': 'dict', 'size': 4, 'keys_sample': ['last_epoch', 'total_epochs', 'base_lrs', 'minimum_learning_rate']}
+  best_metric: 0.8114558513227331
+  contract: cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1
+  rescue: True
+MODEL FINITENESS: {
+  "model_key": "model_state_dict",
+  "total_tensors": 668,
+  "nonfinite_tensors": [],
+  "model_entries": 668
+}
+
+=== MODEL COMPATIBILITY ===
+Missing model keys: []
+Unexpected model keys: []
+Shape mismatches: []
+Model tensors changed relative to epoch 32: 667/668
+
+READ-ONLY AUDIT COMPLETE. No checkpoint files were changed.
