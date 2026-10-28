@@ -1,130 +1,96 @@
-## Epoch 33 rescued — recovery and training plan
+I've prepared the complete epoch 33 recovery and training restart package, including the source-code fixes.
 
-&#x20;Emergency checkpoint saved
+Download DeepDocForgery Epoch 33 Resume Fix
 
-Your latest output is a major improvement. We now have evidence that the emergency save completed successfully.
+Checkpoint conversion, AUROC repair, pre-validation checkpoint saving, verification tests, and training launch scripts.
 
-| Check                       | Result                   |
-| --------------------------- | ------------------------ |
-| Rescue file                 | `epoch33_EMERGENCY.pt`   |
-| File size                   | 590 MB                   |
-| Saved epoch                 | 33                       |
-| Rescue script               | Completed                |
-| Reported exception          | None                     |
-| Full checkpoint integrity   | Still needs verification |
-| Native resume compatibility | Still needs verification |
+## Step 1 — Place the ZIP in your repository
 
-Shutting down the PC was reasonable after saving the rescue file. The GPU memory has been cleared, but the checkpoint file should remain on disk.
+Copy the downloaded ZIP to:
 
-Tomorrow, our goal is to resume at epoch 34/50, not repeat epoch 33, provided we verify and convert the rescue checkpoint successfully.
+```
+/home/fastlab/deepFakeDetection/DeepDocForgery/
+```
 
-### What actually went wrong
+Then open the Ubuntu terminal on the GPU PC.
 
-From the previous troubleshooting logs:
+## Step 2 — Prepare the environment
 
-1. Epoch 33 completed all 9,853 training batches.
-2. Validation completed all 1,737 batches.
-3. The process remained inside `binary_auroc()` in `deepdocforgery/metrics.py`.
-4. The stack trace exposed a `NaN` threshold, and the rescue intervention found 76 non-finite AUROC scores.
-5. The process never reached its normal checkpoint-writing stage.
-
-This was primarily a validation-metric failure blocking checkpoint creation, rather than evidence of GPU memory exhaustion.
-
-We also need to address the repeated FP16 non-finite losses near the end of epoch 33, even though BF16 retries recovered those batches.
-
-The permanent solution has three parts: repair AUROC and numerical stability, make checkpoint persistence independent of metric success, and validate the checkpoint/resume mechanism before restarting the remaining 17 epochs.
-
-## 1. I've prepared the recovery tools
-
-Download DeepDocForgery Epoch 33 Recovery Tools
-
-ZIP containing checkpoint verification, AUROC repair code, tests, an atomic checkpoint writer, and instructions.
-
-These files do not automatically modify your repository. That is deliberate: we must first confirm the exact checkpoint format.
-
-## 2. Tomorrow: first commands to run
-
-After switching on the PC, activate your environment:
+Copy and run:
 
 ```
 cd ~/deepFakeDetection/DeepDocForgery
+
 source .venv-cuda/bin/activate
+
+mountpoint -q output/processed/cuda || \
+sudo mount /dev/nvme0n1p5 output/processed/cuda
+
+unzip -o DeepDocForgery_epoch33_resume_fix.zip -d .
 ```
 
-Confirm your files exist:
+## Step 3 — Apply fixes, verify, and start training
+
+For a long training run, I recommend using `tmux` so disconnecting your terminal does not end the process.
+
+If `tmux` is installed, enter:
 
 ```
-ls -lh output/model/cuda-full/{last.pt,epoch33_EMERGENCY.pt,best.pt}
-df -h .
+tmux new -s deepdoc-epoch34
 ```
 
-Back up the rescued and previous checkpoints:
+Then execute:
 
 ```
-mkdir -p output/recovery/epoch33-backup
+cd ~/deepFakeDetection/DeepDocForgery
 
-cp -n output/model/cuda-full/epoch33_EMERGENCY.pt \
-  output/recovery/epoch33-backup/
-
-cp -n output/model/cuda-full/last.pt \
-  output/recovery/epoch33-backup/last-epoch32.pt
+bash DeepDocForgery_epoch33_resume_fix/prepare.sh && \
+bash DeepDocForgery_epoch33_resume_fix/launch.sh
 ```
 
-Extract the ZIP into the repository, then run:
+This is the main command. It will automatically:
+
+1. Verify the SHA-256 hashes of the original and rescued checkpoints.
+2. Check all rescued model and optimizer tensors for non-finite values.
+3. Convert the emergency checkpoint into the native format as `epoch33_RESUMABLE.pt`.
+4. Set the completed epoch index to `32`, so training begins at epoch 34/50.
+5. Patch `binary_auroc()` to prevent the NaN infinite loop.
+6. Add a recovery checkpoint immediately before validation on every future epoch.
+7. Run syntax checks, AUROC unit tests, and the native GPU checkpoint preflight.
+8. Start training only if every preceding check succeeds.
+
+The original emergency checkpoint, `last.pt`, and `best.pt` are backed up. The conversion resets RNG streams and inherits the previous AMP scaler, so continuation will not be bit-for-bit identical.
+
+## Step 4 — Confirm epoch 34 starts
+
+Look for these messages:
 
 ```
-python DeepDocForgery_epoch33_recovery/inspect_checkpoints.py \
-  | tee output/recovery/epoch33-checkpoint-audit.txt
+READY: epoch 33 native checkpoint passed preflight.
+Resumed after epoch 33/50 ...
+Epoch 34/50 started
 ```
 
-The script checks actual checkpoint keys, SHA-256 hashes, model tensor finiteness, tensor shapes, and whether the model parameters differ between epochs 32 and 33. It does not change your checkpoints.
+The exact log wording may vary, but the epoch must be 34/50, not 33/50.
 
-Do not launch training yet. We need to confirm that the optimizer state was saved and that the recovered file can be translated into the native resume format.
-
-## 3. Permanent fixes for epochs 34–50
-
-Fix A — Checkpoint before validation
-
-Save a complete recovery checkpoint immediately after the last optimizer step of every epoch, before AUROC or other validation metrics. If validation crashes, training can still resume at the next epoch.
-
-Fix B — Repair AUROC
-
-Replace the pathological metric calculation with a bounded, tie-aware algorithm that handles non-finite predictions. Record invalid-score counts, and do not use an undefined metric to select the best model.
-
-Fix C — Atomic, recoverable saves
-
-Save into a temporary file, flush to disk, atomically replace the checkpoint, and retain the previous valid version. Include model, optimizer, scheduler, AMP scaler, RNG state, epoch and global step.
-
-Fix D — Investigate numerical instability
-
-Inspect the repeated FP16 failures near batch 9,800. Check gradient scaling, activation finiteness and whether BF16 or FP32 is needed for sensitive operations. We should not merely hide invalid values.
-
-Fix E — Verify actual resumption
-
-Run a native checkpoint preflight, load the converted checkpoint in a fresh process and verify that the reported next epoch is 34. Then perform a short controlled training test before the full run.
-
-For the remaining run, I recommend maintaining `last.pt`, `last.previous.pt`, `best.pt`, and periodic immutable epoch checkpoints. Checkpoint writing must not depend on AUROC succeeding.
-
-## 4. Final preparation: inspect the existing training code
-
-Tomorrow, run this and save its output:
+To monitor from another terminal:
 
 ```
-grep -nE 'torch.save|torch.load|checkpoint|global_step|scheduler.state_dict|optimizer.state_dict' \
-  deepdocforgery/train.py
+cd ~/deepFakeDetection/DeepDocForgery
+
+tail -f output/recovery/epoch34-launch.log
 ```
 
-And:
+The new pre-validation checkpoints will look like:
 
 ```
-sed -n '1,95p' deepdocforgery/metrics.py
-sed -n '790,950p' deepdocforgery/train.py
+output/model/cuda-full/epoch-0034-prevalidation.pt
+output/model/cuda-full/epoch-0035-prevalidation.pt
+...
 ```
 
-These sections, together with the audit results, will let us make the actual source-level patches and create a compatible epoch-33 native checkpoint without guessing your loader's internal format.
+If you use `tmux`, press `Ctrl+B`, then `D` to detach without stopping training.
 
-The order is important: preserve → verify → convert → patch → test → resume.
+Important: If the preparation command reports `STOP`, an exception, or a failed preflight, the training command will not run. Do not bypass that failure.
 
-Our target remains the original 50-epoch training run using `configs/cuda/HPO_RESULTS.yaml`, without modifying your selected hyperparameters unnecessarily.
-
-The rescue succeeded at writing a file. Now we need to establish that it is a fully resumable checkpoint before trusting it with the remaining epochs.&#x20;
+Our target is to preserve the completed 33 epochs and continue through epoch 50 without repeating the previous AUROC blockage.
