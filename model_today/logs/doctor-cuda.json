@@ -14,7 +14,7 @@
       "torch_interop_threads": 4,
       "torch_threads": 28
     },
-    "config": "/home/fastlab/deepFakeDetection/DeepDocForgery/configs/cuda/full.yaml",
+    "config": "/home/fastlab/deepFakeDetection/DeepDocForgery/configs/cuda/HPO_RESULTS.yaml",
     "cuda_available": true,
     "data_workers": 20,
     "dependency/jpegio": true,
@@ -26,28 +26,28 @@
     "manifest_files": {
       "missing_preview": [],
       "missing_references": 0,
-      "records_checked": 178999,
-      "references_checked": 357998,
+      "records_checked": 179000,
+      "references_checked": 358000,
       "workers": 20
     },
     "manifest_summary": {
       "adn_supervision": {
-        "proxy": 178999
+        "proxy": 179000
       },
       "benchmarks": {
         "doctamper-fcd": 2000,
         "doctamper-scd": 18000,
         "doctamper-testing": 30000,
         "doctamper-training": 120000,
-        "midv-dm": 8999
+        "midv-dm": 9000
       },
-      "classification_supervised": 8999,
+      "classification_supervised": 9000,
       "datasets": {
         "doctamper": 170000,
-        "midv": 8999
+        "midv": 9000
       },
       "degradation_supervised": 0,
-      "exif_transposed_images": 499,
+      "exif_transposed_images": 500,
       "groups": 125986,
       "labels": {
         "test": {
@@ -55,7 +55,7 @@
           "1": 51344
         },
         "train": {
-          "0": 691,
+          "0": 692,
           "1": 107691
         },
         "val": {
@@ -63,67 +63,67 @@
           "1": 18965
         }
       },
-      "localization_supervised": 178999,
-      "samples": 178999,
+      "localization_supervised": 179000,
+      "samples": 179000,
       "scale_aligned_masks": 0,
       "splits": {
         "test": 51512,
-        "train": 108382,
+        "train": 108383,
         "val": 19105
       }
     },
     "protocol/split_counts": {
       "test": 51512,
-      "train": 108382,
+      "train": 108383,
       "val": 19105
     },
     "protocol/training_datasets": [
       "doctamper",
       "midv"
     ],
-    "protocol/training_localization_supervised": 108382,
+    "protocol/training_localization_supervised": 108383,
     "python_torch": "2.11.0+cu128",
     "resources": {
       "cpu": {
         "logical": 28,
         "physical": 20,
-        "process_percent": 17.7,
-        "system_percent": 1.3
+        "process_percent": 71.2,
+        "system_percent": 4.2
       },
       "cuda": {
         "allocated_gib": 0.0,
         "device": 0,
-        "device_free_gib": 19.06,
+        "device_free_gib": 19.024,
         "device_total_gib": 19.54,
-        "device_used_gib": 0.48,
+        "device_used_gib": 0.516,
         "name": "NVIDIA RTX 4000 Ada Generation",
         "nvidia_smi": {
           "compute_processes": [
             {
               "name": "python",
-              "pid": 18614,
+              "pid": 8695,
               "used_vram_gib": 0.156
             }
           ],
           "index": 0,
-          "memory_free_gib": 19.061,
+          "memory_free_gib": 19.024,
           "memory_total_gib": 19.995,
-          "memory_used_gib": 0.48,
+          "memory_used_gib": 0.517,
           "name": "NVIDIA RTX 4000 Ada Generation",
-          "power_draw_w": 13.93,
+          "power_draw_w": 14.05,
           "power_limit_w": 130.0,
-          "temperature_c": 33.0,
-          "utilization_percent": 24.0
+          "temperature_c": 31.0,
+          "utilization_percent": 4.0
         },
         "peak_allocated_gib": 0.0,
         "reserved_gib": 0.0
       },
       "ram": {
-        "process_rss_gib": 0.498,
-        "system_available_gib": 26.444,
-        "system_percent": 14.8,
+        "process_rss_gib": 0.495,
+        "system_available_gib": 26.886,
+        "system_percent": 13.4,
         "system_total_gib": 31.029,
-        "system_used_gib": 4.585
+        "system_used_gib": 4.143
       }
     },
     "stages": {
@@ -134,7 +134,7 @@
     },
     "vram_gib": 19.54
   },
-  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T055304Z-18614-825740.jsonl",
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20261027T065115Z-8695-66ccbb.jsonl",
   "issues": [],
   "profile": "cuda",
   "report": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor-cuda.json",
@@ -142,45 +142,45 @@
     "cpu": {
       "logical": 28,
       "physical": 20,
-      "process_percent": 80.1,
-      "system_percent": 3.6
+      "process_percent": 88.4,
+      "system_percent": 4.0
     },
     "cuda": {
       "allocated_gib": 0.0,
       "device": 0,
-      "device_free_gib": 19.062,
+      "device_free_gib": 19.034,
       "device_total_gib": 19.54,
-      "device_used_gib": 0.478,
+      "device_used_gib": 0.506,
       "name": "NVIDIA RTX 4000 Ada Generation",
       "nvidia_smi": {
         "compute_processes": [
           {
             "name": "python",
-            "pid": 18614,
+            "pid": 8695,
             "used_vram_gib": 0.156
           }
         ],
         "index": 0,
-        "memory_free_gib": 19.062,
+        "memory_free_gib": 19.034,
         "memory_total_gib": 19.995,
-        "memory_used_gib": 0.479,
+        "memory_used_gib": 0.506,
         "name": "NVIDIA RTX 4000 Ada Generation",
-        "power_draw_w": 31.33,
+        "power_draw_w": 30.86,
         "power_limit_w": 130.0,
-        "temperature_c": 35.0,
-        "utilization_percent": 1.0
+        "temperature_c": 33.0,
+        "utilization_percent": 0.0
       },
       "peak_allocated_gib": 0.0,
       "reserved_gib": 0.0
     },
     "ram": {
-      "process_rss_gib": 0.817,
-      "system_available_gib": 26.12,
-      "system_percent": 15.8,
+      "process_rss_gib": 0.814,
+      "system_available_gib": 26.52,
+      "system_percent": 14.5,
       "system_total_gib": 31.029,
-      "system_used_gib": 4.909
+      "system_used_gib": 4.508
     }
   },
   "status": "ok",
-  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20260909T055304Z-18614-825740.log"
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/doctor/20261027T065115Z-8695-66ccbb.log"
 }

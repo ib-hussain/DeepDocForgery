@@ -1,0 +1,12 @@
+{
+  "source_epoch32_sha256": "27f841c60df62fc7cfb5b842f077f078d91d63c293cd9dabb35b22e6d3bce1fc",
+  "source_rescue_sha256": "62419ffb745121e6df5667b99101c26f35287513b8cb10ff1fd7253951816ace",
+  "converted_sha256": "ec22c1b664a72dadee6c9cb8ee3dbcdd263c79b7c795c2da38c950d90a794e21",
+  "converted_checkpoint": "output/model/cuda-full/epoch33_RESUMABLE.pt",
+  "completed_epoch": 33,
+  "next_epoch": 34,
+  "global_step_estimated": 81312,
+  "rng_state": "reseeded, not reproduced exactly",
+  "amp_scaler": "inherited from epoch32",
+  "validation": "epoch33 full metrics incomplete"
+}

@@ -1,0 +1,31 @@
+{
+  "config_sha256": "a3f515af94fdd3b23360f5f53cd6c29d81fecc6e6b9312050fa37cdd18b7ee8f",
+  "files": [
+    {
+      "path": "deepdocforgery/train.py",
+      "original_sha256": "13a447738e0635ff3b8c59637c181976f8af4d6a58927d727955cdd67e15974c",
+      "repaired_sha256": "44c766b3b71ffb3bef37f66e9aa642c64b9aa300e00bae3101aac55c2533e25d"
+    },
+    {
+      "path": "deepdocforgery/spatial.py",
+      "original_sha256": "852c47858bbd1c6c99147282e5a0ea3b30f9aa37b2aa11b25961d468ed3b14f5",
+      "repaired_sha256": "eadbb7204b7e1e94098ef9b9dd282f4b05adaef384a48158c11f5243d7f050cd"
+    },
+    {
+      "path": "deepdocforgery/decoder.py",
+      "original_sha256": "182a2cc76ef82faebe9d0e10520dbab9415b23e38748d26ec774a521cd09ac4b",
+      "repaired_sha256": "8fb471408f5e636c2455b14bbbdbb0207b5a8901a04f6fcd8b1dfe1ff39c1151"
+    },
+    {
+      "path": "deepdocforgery/epoch33_preflight.py",
+      "original_sha256": null,
+      "repaired_sha256": "d075dcd13226a2f32faed93e91d1d0fe87f8add180d41c9cef35e5443623c908"
+    },
+    {
+      "path": "tests/test_epoch33_recovery.py",
+      "original_sha256": null,
+      "repaired_sha256": "74e7db19817b625a61437a7c94cb40a9be7b969c348382f0fd9b2bf9a4b04440"
+    }
+  ],
+  "backup": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/recovery/epoch33-code-20261027T064953.550553Z"
+}

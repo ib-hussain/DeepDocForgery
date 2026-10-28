@@ -1,0 +1,6 @@
+03:40:12 | INFO    | STARTED
+03:40:12 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034012Z-7907-27fcaa.log
+03:40:12 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:40:13 | INFO    | CPU 5% | RAM 4.6/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G
+03:40:13 | ERROR   | FAILED: Missing dataset files: [PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000000.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000000.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/images/000000001.jpg'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-doctamper/DocTamperV1-TrainingSet/labels/000000001.png'), PosixPath('/mnt/d/Downloads/Repositories/deepFakeDetection/data/sample-midv/images/authentic/alb_id/01.jpg')]
+03:40:13 | ERROR   | FAILED | CPU 5% | RAM 4.6/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 29C | alloc/reserved/peak 0.0/0.0/0.0G

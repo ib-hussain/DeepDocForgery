@@ -3,65 +3,65 @@
   "best_metric": 0.8114558513227331,
   "command": "train",
   "contract": "cc140f9fda5031deb120f7d7cffd1c06965b8fef96a5bf472596e842b8b506b1",
-  "epoch": 17,
+  "epoch": 34,
   "epochs": 50,
-  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.jsonl",
-  "global_step": 41888,
+  "events_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034731Z-8694-f60b8d.jsonl",
+  "global_step": 83776,
   "last_checkpoint": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt",
   "performance": {
-    "epoch_duration_seconds": 11830.884642886,
-    "train_batches_per_second": 1.0983587924165292,
-    "train_samples_per_second": 12.081946716581822,
-    "training_duration_seconds": 8970.657009375002
+    "epoch_duration_seconds": 14097.435467967,
+    "train_batches_per_second": 0.8424878212322564,
+    "train_samples_per_second": 9.26736603355482,
+    "training_duration_seconds": 11695.124548612
   },
   "resources": {
     "cpu": {
       "logical": 28,
       "physical": 20,
-      "process_percent": 10.6,
-      "system_percent": 31.9
+      "process_percent": 17.9,
+      "system_percent": 34.1
     },
     "cuda": {
-      "allocated_gib": 1.61,
+      "allocated_gib": 0.593,
       "device": 0,
-      "device_free_gib": 13.246,
+      "device_free_gib": 14.818,
       "device_total_gib": 19.54,
-      "device_used_gib": 6.294,
+      "device_used_gib": 4.722,
       "name": "NVIDIA RTX 4000 Ada Generation",
       "nvidia_smi": {
         "compute_processes": [
           {
             "name": "python",
-            "pid": 9913,
-            "used_vram_gib": 5.939
+            "pid": 8694,
+            "used_vram_gib": 4.34
           }
         ],
         "index": 0,
-        "memory_free_gib": 13.246,
+        "memory_free_gib": 14.818,
         "memory_total_gib": 19.995,
-        "memory_used_gib": 6.294,
+        "memory_used_gib": 4.723,
         "name": "NVIDIA RTX 4000 Ada Generation",
-        "power_draw_w": 39.41,
+        "power_draw_w": 45.3,
         "power_limit_w": 130.0,
-        "temperature_c": 54.0,
-        "utilization_percent": 2.0
+        "temperature_c": 53.0,
+        "utilization_percent": 0.0
       },
-      "peak_allocated_gib": 17.022,
-      "reserved_gib": 5.447
+      "peak_allocated_gib": 16.058,
+      "reserved_gib": 3.832
     },
     "ram": {
-      "process_rss_gib": 3.067,
-      "system_available_gib": 24.079,
-      "system_percent": 22.4,
+      "process_rss_gib": 2.69,
+      "system_available_gib": 24.384,
+      "system_percent": 21.4,
       "system_total_gib": 31.029,
-      "system_used_gib": 6.95
+      "system_used_gib": 6.644
     }
   },
   "resume_command": "python -m deepdocforgery train --config configs/cuda/HPO_RESULTS.yaml --device cuda --output /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full --log-dir output/logs",
-  "run_id": "20261012T050205Z-9913-c6732b",
+  "run_id": "20261028T034731Z-8694-f60b8d",
   "selection_metric": "pixel_macro/f1_forged",
-  "started_at": "2026-10-12T05:02:05+00:00",
+  "started_at": "2026-10-28T03:47:31+00:00",
   "status": "running",
-  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261012T050205Z-9913-c6732b.log",
-  "updated_at": "2026-10-12T08:20:05+00:00"
+  "text_log": "/home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034731Z-8694-f60b8d.log",
+  "updated_at": "2026-10-28T07:43:06+00:00"
 }

@@ -1,0 +1,52 @@
+06:53:06 | INFO    | STARTED
+06:53:06 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261027T065306Z-9090-11d231.log
+06:53:07 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+06:53:07 | INFO    | CPU 13% | RAM 4.1/31.0G | RSS 0.5G | VRAM 0.5/19.5G | GPU 0% | temp 32C | alloc/reserved/peak 0.0/0.0/0.0G
+06:53:14 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+06:53:14 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+06:53:23 | INFO    | Model ready: 51,474,589 trainable parameters
+06:53:23 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+06:53:24 | INFO    | Resumed after epoch 32/50 from /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/last.pt
+06:53:24 | INFO    | Epoch 33/50 started
+07:09:22 | INFO    | Epoch 33: 1000/9853 batches | loss=0.8001 | CPU 15% | RAM 23.9/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 0.6/16.3/16.1G
+07:23:58 | INFO    | Epoch 33: 2000/9853 batches | loss=0.8001 | CPU 15% | RAM 24.3/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 0.6/16.3/16.1G
+07:38:34 | INFO    | Epoch 33: 3000/9853 batches | loss=0.8030 | CPU 15% | RAM 24.4/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 72C | alloc/reserved/peak 0.6/16.3/16.1G
+07:53:11 | INFO    | Epoch 33: 4000/9853 batches | loss=0.8037 | CPU 15% | RAM 24.2/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 0.6/16.3/16.1G
+07:58:26 | WARNING | Non-finite gradient at epoch 33, batch 4360; optimiser step skipped (1/20 consecutive)
+08:07:47 | INFO    | Epoch 33: 5000/9853 batches | loss=0.8024 | CPU 15% | RAM 24.6/31.0G | RSS 3.3G | VRAM 17.1/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 0.6/16.3/16.1G
+08:22:23 | INFO    | Epoch 33: 6000/9853 batches | loss=0.8031 | CPU 15% | RAM 24.7/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 72C | alloc/reserved/peak 0.6/16.3/16.1G
+08:25:01 | WARNING | Non-finite gradient at epoch 33, batch 6180; optimiser step skipped (1/20 consecutive)
+08:37:00 | INFO    | Epoch 33: 7000/9853 batches | loss=0.8018 | CPU 15% | RAM 24.7/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 73C | alloc/reserved/peak 0.6/16.3/16.1G
+08:51:36 | INFO    | Epoch 33: 8000/9853 batches | loss=0.8018 | CPU 15% | RAM 25.0/31.0G | RSS 3.2G | VRAM 17.1/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 0.6/16.3/16.1G
+09:06:13 | INFO    | Epoch 33: 9000/9853 batches | loss=0.8024 | CPU 15% | RAM 24.4/31.0G | RSS 3.3G | VRAM 17.1/19.5G | GPU 100% | temp 74C | alloc/reserved/peak 0.6/16.3/16.1G
+09:18:53 | WARNING | Epoch 33, batch 9797: non-finite FP16 loss; BF16 retry recovered
+09:18:55 | WARNING | Epoch 33, batch 9799: non-finite FP16 loss; BF16 retry recovered
+09:19:04 | WARNING | Epoch 33, batch 9808: non-finite FP16 loss; BF16 retry recovered
+09:19:07 | WARNING | Epoch 33, batch 9812: non-finite FP16 loss; BF16 retry recovered
+09:19:10 | WARNING | Epoch 33, batch 9814: non-finite FP16 loss; BF16 retry recovered
+09:19:11 | WARNING | Epoch 33, batch 9815: non-finite FP16 loss; BF16 retry recovered
+09:19:13 | WARNING | Epoch 33, batch 9817: non-finite FP16 loss; BF16 retry recovered
+09:19:14 | WARNING | Epoch 33, batch 9818: non-finite FP16 loss; BF16 retry recovered
+09:19:17 | WARNING | Epoch 33, batch 9820: non-finite FP16 loss; BF16 retry recovered
+09:19:21 | WARNING | Epoch 33, batch 9824: non-finite FP16 loss; BF16 retry recovered
+09:19:23 | WARNING | Epoch 33, batch 9826: non-finite FP16 loss; BF16 retry recovered
+09:19:24 | WARNING | Epoch 33, batch 9827: non-finite FP16 loss; BF16 retry recovered
+09:19:27 | WARNING | Epoch 33, batch 9830: non-finite FP16 loss; BF16 retry recovered
+09:19:28 | WARNING | Epoch 33, batch 9831: non-finite FP16 loss; BF16 retry recovered
+09:19:31 | WARNING | Epoch 33, batch 9834: non-finite FP16 loss; BF16 retry recovered
+09:19:33 | WARNING | Epoch 33, batch 9835: non-finite FP16 loss; BF16 retry recovered
+09:19:34 | WARNING | Epoch 33, batch 9836: non-finite FP16 loss; BF16 retry recovered
+09:19:36 | WARNING | Epoch 33, batch 9838: non-finite FP16 loss; BF16 retry recovered
+09:19:38 | WARNING | Epoch 33, batch 9839: non-finite FP16 loss; BF16 retry recovered
+09:19:39 | WARNING | Epoch 33, batch 9840: non-finite FP16 loss; BF16 retry recovered
+09:19:41 | WARNING | Epoch 33, batch 9842: non-finite FP16 loss; BF16 retry recovered
+09:19:42 | WARNING | Epoch 33, batch 9843: non-finite FP16 loss; BF16 retry recovered
+09:19:45 | WARNING | Epoch 33, batch 9845: non-finite FP16 loss; BF16 retry recovered
+09:19:46 | WARNING | Epoch 33, batch 9846: non-finite FP16 loss; BF16 retry recovered
+09:19:47 | WARNING | Epoch 33, batch 9847: non-finite FP16 loss; BF16 retry recovered
+09:19:49 | WARNING | Epoch 33, batch 9848: non-finite FP16 loss; BF16 retry recovered
+09:19:52 | WARNING | Epoch 33, batch 9851: non-finite FP16 loss; BF16 retry recovered
+09:19:54 | WARNING | Epoch 33, batch 9853: non-finite FP16 loss; BF16 retry recovered
+09:19:54 | INFO    | Epoch 33: 9853/9853 batches | loss=0.8020 | CPU 13% | RAM 19.0/31.0G | RSS 3.6G | VRAM 17.3/19.5G | GPU 98% | temp 72C | alloc/reserved/peak 0.8/16.4/16.1G
+09:40:40 | INFO    | Validate 33/50: 1000/1737 batches | CPU 40% | RAM 18.0/31.0G | RSS 3.9G | VRAM 17.3/19.5G | GPU 0% | temp 57C | alloc/reserved/peak 1.4/16.4/16.1G
+09:59:28 | INFO    | Validate 33/50: 1737/1737 batches | CPU 48% | RAM 10.8/31.0G | RSS 3.7G | VRAM 4.6/19.5G | GPU 78% | temp 53C | alloc/reserved/peak 1.2/3.8/16.1G

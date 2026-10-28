@@ -1,0 +1,2 @@
+Saved epoch 33
+Checkpoint: output/model/cuda-full/epoch33_EMERGENCY.pt
