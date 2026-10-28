@@ -4,3 +4,122 @@ sudo mount /dev/nvme0n1p5 /home/fastlab/deepFakeDetection/DeepDocForgery/output/
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m deepdocforgery train \ 
 --config configs/cuda/HPO_RESULTS.yaml --device cuda --output output/model/cuda-full --resume output/model/cuda-full/last.pt
 
+
+
+fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls -lh output/*
+-rwxrwxrwx 1 fastlab fastlab  700 Sep  8 10:28 output/README.md
+
+output/embeddings:
+total 512
+-rwxrwxrwx 1 fastlab fastlab 113 Sep  4 16:51 README.md
+
+output/hpo:
+total 8.0K
+-rwxrwxrwx 1 fastlab fastlab  664 Sep  8 10:28 README.md
+drwxrwxrwx 1 fastlab fastlab 4.0K Sep 17 04:49 study-c50fc0c4111f
+
+output/inference:
+total 512
+-rwxrwxrwx 1 fastlab fastlab 350 Sep  8 10:28 README.md
+
+output/logs:
+total 41K
+drwxrwxrwx 1 fastlab fastlab 4.0K Oct 27 06:51 doctor
+-rwxrwxrwx 1 fastlab fastlab 1.2K Sep  4 19:21 doctor-cpu.json
+-rwxrwxrwx 1 fastlab fastlab 5.0K Oct 27 06:51 doctor-cuda.json
+drwxrwxrwx 1 fastlab fastlab 4.0K Sep 16 11:21 hpo
+drwxrwxrwx 1 fastlab fastlab    0 Sep 14 06:29 prepare
+drwxrwxrwx 1 fastlab fastlab    0 Sep  5 05:03 pytest-cache
+-rwxrwxrwx 1 fastlab fastlab  883 Sep  8 10:28 README.md
+-rwxrwxrwx 1 fastlab fastlab  380 Oct  5 04:51 scan.log
+drwxrwxrwx 1 fastlab fastlab 4.0K Sep  8 10:29 setup
+-rwxrwxrwx 1 fastlab fastlab  979 Sep  4 19:22 smoke-cpu.json
+drwxrwxrwx 1 fastlab fastlab 4.0K Sep  9 05:56 status
+drwxrwxrwx 1 fastlab fastlab 4.0K Oct 28 09:12 train
+
+output/manifests:
+total 110M
+-rwxrwxrwx 1 fastlab fastlab 143K Sep  4 19:15 cpu.jsonl
+-rwxrwxrwx 1 fastlab fastlab 1.3K Sep  4 19:15 cpu.summary.json
+-rwxrwxrwx 1 fastlab fastlab 110M Sep 15 09:39 cuda.jsonl
+-rwxrwxrwx 1 fastlab fastlab 3.6K Sep  9 06:50 cuda.summary.json
+-rwxrwxrwx 1 fastlab fastlab  222 Sep  4 16:51 README.md
+
+output/model:
+total 13K
+drwxrwxrwx 1 fastlab fastlab 4.0K Oct 28 03:40 cpu-sample
+drwxrwxrwx 1 fastlab fastlab 8.0K Oct 28 07:43 cuda-full
+-rwxrwxrwx 1 fastlab fastlab  634 Sep  8 10:28 README.md
+
+output/processed:
+total 4.5K
+drwxr-xr-x 6 fastlab fastlab 4.0K Oct  5 03:17 cuda
+-rwxrwxrwx 1 fastlab fastlab  172 Sep  4 16:51 README.md
+
+output/recovery:
+total 8.8M
+drwxrwxrwx 1 fastlab fastlab    0 Oct 28 03:47 epoch33-backup
+-rwxrwxrwx 1 fastlab fastlab 5.0K Oct 28 03:31 epoch33-checkpoint-audit.txt
+drwxrwxrwx 1 fastlab fastlab    0 Oct 27 06:49 epoch33-code-20261027T064953.550553Z
+-rwxrwxrwx 1 fastlab fastlab  578 Oct 28 03:47 epoch33-conversion-manifest.json
+-rwxrwxrwx 1 fastlab fastlab    6 Oct 28 03:47 EPOCH33_READY.txt
+drwxrwxrwx 1 fastlab fastlab    0 Oct 28 03:47 epoch33-source-before-resume-fix
+-rwxrwxrwx 1 fastlab fastlab 8.8M Oct 28 09:12 epoch34-launch.log
+
+output/state:
+total 4.5K
+drwxrwxrwx 1 fastlab fastlab 4.0K Oct 27 06:51 doctor
+drwxrwxrwx 1 fastlab fastlab    0 Sep  8 10:36 prepare
+-rwxrwxrwx 1 fastlab fastlab  432 Sep  8 10:28 README.md
+drwxrwxrwx 1 fastlab fastlab    0 Sep  8 10:36 setup
+fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls -lh output/model/
+total 13K
+drwxrwxrwx 1 fastlab fastlab 4.0K Oct 28 03:40 cpu-sample
+drwxrwxrwx 1 fastlab fastlab 8.0K Oct 28 07:43 cuda-full
+-rwxrwxrwx 1 fastlab fastlab  634 Sep  8 10:28 README.md
+fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ ls -lh output/model/cuda-full/
+total 23G
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  5 11:09 best.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 08:14 epoch-0001.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 11:19 epoch-0002.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 14:24 epoch-0003.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 17:28 epoch-0004.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 20:31 epoch-0005.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 17 23:35 epoch-0006.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 18 02:38 epoch-0007.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 18 05:41 epoch-0008.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Sep 18 08:44 epoch-0009.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  5 08:03 epoch-0010.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  5 11:09 epoch-0011.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  6 09:34 epoch-0012.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  7 06:37 epoch-0013.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  7 09:37 epoch-0014.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  8 08:15 epoch-0015.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct  8 11:19 epoch-0016.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 12 08:20 epoch-0017.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 12 11:36 epoch-0018.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 13 08:08 epoch-0019.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 13 11:09 epoch-0020.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 14 08:18 epoch-0021.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 14 11:31 epoch-0022.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 15 08:05 epoch-0023.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 16 08:01 epoch-0024.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 16 14:01 epoch-0025.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 16 17:05 epoch-0026.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 16 20:08 epoch-0027.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 16 23:11 epoch-0028.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 17 02:15 epoch-0029.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 17 05:18 epoch-0030.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 17 16:27 epoch-0031.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 19 06:21 epoch-0032.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 28 07:03 epoch-0034-prevalidation.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 28 07:43 epoch-0034.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 27 12:17 epoch33_EMERGENCY.pt
+-rwxrwxrwx 1 fastlab fastlab   71 Oct 27 12:17 epoch33_RESCUE_SUCCESS.txt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 28 03:47 epoch33_RESUMABLE.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 27 06:49 last-before-epoch33-repair.pt
+-rwxrwxrwx 1 fastlab fastlab 590M Oct 28 07:43 last.pt
+-rwxrwxrwx 1 fastlab fastlab 279K Oct 28 08:52 metrics.jsonl
+-rwxrwxrwx 1 fastlab fastlab 2.2K Oct 28 03:47 resolved_config.yaml
+-rwxrwxrwx 1 fastlab fastlab 2.4K Oct 28 07:43 status.json
+fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 
