@@ -806,6 +806,36 @@ def _train(args: argparse.Namespace, run: RunLogger) -> dict[str, Any]:
             raise RuntimeError("No training batches were processed")
         scheduler.step(epoch + 1)
 
+        # EPOCH33_RECOVERY_PREVALIDATION_CHECKPOINT_V1
+        # Persist all train state before expensive validation and AUROC metrics.
+        # An AUROC failure cannot erase the epoch's completed optimizer work.
+        _prevalidation_checkpoint = _checkpoint_payload(
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            scaler=scaler,
+            config=config,
+            epoch=epoch,
+            global_step=global_step,
+            best_metric=best_metric,
+            validation={"recovery_status": "training_complete_validation_pending"},
+            contract=contract,
+            data_generator_state=(
+                None if getattr(train_loader, "generator", None) is None
+                else train_loader.generator.get_state()
+            ),
+        )
+        atomic_torch_save(
+            _prevalidation_checkpoint,
+            output_dir / f"epoch-{epoch + 1:04d}-prevalidation.pt",
+        )
+        del _prevalidation_checkpoint
+        run.info(
+            f"Pre-validation recovery checkpoint saved for epoch {epoch + 1}",
+            event="prevalidation_checkpoint_saved",
+            epoch=epoch + 1,
+        )
+
         validation = evaluate_model(
             model,
             val_loader,

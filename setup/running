@@ -206,4 +206,146 @@ sed -n '520,610p' deepdocforgery/train.py
     metric_name = str(training.get("selection_metric", "pixel/f1"))
     log_path = output_dir / "metrics.jsonl"
     logging_config = config.get("logging", {})
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ mountpoint -q output/processed/cuda || sudo mount /dev/nvme0n1p5 output/processed/cuda
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ unzip -o DeepDocForgery_epoch33_resume_fix.zip -d .
+Archive:  DeepDocForgery_epoch33_resume_fix.zip
+   creating: ./DeepDocForgery_epoch33_resume_fix/
+  inflating: ./DeepDocForgery_epoch33_resume_fix/README.md  
+   creating: ./DeepDocForgery_epoch33_resume_fix/__pycache__/
+  inflating: ./DeepDocForgery_epoch33_resume_fix/__pycache__/patch_training.cpython-313.pyc  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/__pycache__/test_fix.cpython-313.pyc  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/__pycache__/convert_epoch33.cpython-313.pyc  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/patch_training.py  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/launch.sh  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/test_fix.py  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/convert_epoch33.py  
+  inflating: ./DeepDocForgery_epoch33_resume_fix/prepare.sh  
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ bash DeepDocForgery_epoch33_resume_fix/prepare.sh && \
+> bash DeepDocForgery_epoch33_resume_fix/launch.sh
+=== 1. Convert epoch33 rescue to native checkpoint ===
+PASS: checksum output/model/cuda-full/last.pt
+PASS: checksum output/model/cuda-full/epoch33_EMERGENCY.pt
+PASS: rescue model 668 tensors finite
+PASS: 667/668 model tensors changed since epoch 32
+PASS: rescued optimizer has 667 finite parameter states
+PASS: native checkpoint reloaded; epoch=32 (zero-based), global_step=81312
+SUCCESS: output/model/cuda-full/epoch33_RESUMABLE.pt (618,548,391 bytes)
+WARNING: resumed data order, RNG, and AMP scale are not bitwise continuous with the original process.
+=== 2. Patch AUROC and pre-validation checkpoint saving ===
+PATCHED: /home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/metrics.py
+PATCHED: /home/fastlab/deepFakeDetection/DeepDocForgery/deepdocforgery/train.py
+BACKUPS: /home/fastlab/deepFakeDetection/DeepDocForgery/output/recovery/epoch33-source-before-resume-fix
+=== 3. Syntax and AUROC regression tests ===
+test_empty (__main__.TestAUROC.test_empty) ... ok
+test_empty_class (__main__.TestAUROC.test_empty_class) ... ok
+test_inf (__main__.TestAUROC.test_inf) ... ok
+test_inverse (__main__.TestAUROC.test_inverse) ... ok
+test_length_error (__main__.TestAUROC.test_length_error) ... ok
+test_nan (__main__.TestAUROC.test_nan) ... ok
+test_perfect (__main__.TestAUROC.test_perfect) ... ok
+test_ties (__main__.TestAUROC.test_ties) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.000s
+
+OK
+=== 4. Native GPU checkpoint preflight for 33 completed epochs ===
+{
+  "checkpoint_sha256": "ec22c1b664a72dadee6c9cb8ee3dbcdd263c79b7c795c2da38c950d90a794e21",
+  "completed_epochs": 33,
+  "config_and_checkpoint_unchanged": true,
+  "config_sha256": "a3f515af94fdd3b23360f5f53cd6c29d81fecc6e6b9312050fa37cdd18b7ee8f",
+  "finite_state_tensors": 2669,
+  "global_step": 81312,
+  "gradient_accumulation_steps": 4,
+  "next_epoch": 34,
+  "physical_batch_size": 11,
+  "probe_batches": 0,
+  "saved_learning_rates": [
+    2.665319313196509e-05,
+    7.2189559107794145e-06
+  ],
+  "status": "ok"
+}
+READY: epoch 33 native checkpoint passed preflight. Run launch.sh next.
+
+=== TRAINING FROM COMPLETED EPOCH 33; NEXT EPOCH MUST BE 34/50 ===
+03:47:31 | INFO    | STARTED
+03:47:31 | INFO    | Logs: /home/fastlab/deepFakeDetection/DeepDocForgery/output/logs/train/20261028T034731Z-8694-f60b8d.log
+03:47:31 | INFO    | Device: cuda | CPU threads: 28 | physical/logical CPUs: 20/28
+03:47:31 | INFO    | CPU 13% | RAM 5.3/31.0G | RSS 0.5G | VRAM 0.6/19.5G | GPU 36% | temp 32C | alloc/reserved/peak 0.0/0.0/0.0G
+03:47:39 | INFO    | Data ready: train=108383 samples, val=19105 samples, workers=20
+03:47:39 | WARNING | Image-level supervision is imbalanced; monitor specificity, false-positive rate, and AUROC for classifier collapse.
+03:48:04 | INFO    | Model ready: 51,474,589 trainable parameters
+03:48:04 | INFO    | Training plan: epochs=50 | batch=11 | accumulation=4 | effective batch=44 | AMP=True
+03:48:04 | INFO    | Resumed after epoch 33/50 from /home/fastlab/deepFakeDetection/DeepDocForgery/output/model/cuda-full/epoch33_RESUMABLE.pt
+03:48:04 | INFO    | Epoch 34/50 started
+03:49:42 | WARNING | Epoch 34, batch 1: non-finite FP16 loss; BF16 retry recovered
+03:50:31 | WARNING | Epoch 34, batch 4: non-finite FP16 loss; BF16 retry recovered
+03:50:33 | WARNING | Epoch 34, batch 6: non-finite FP16 loss; BF16 retry recovered
+03:50:35 | WARNING | Epoch 34, batch 8: non-finite FP16 loss; BF16 retry recovered
+03:50:37 | WARNING | Epoch 34, batch 9: non-finite FP16 loss; BF16 retry recovered
+03:50:38 | WARNING | Epoch 34, batch 10: non-finite FP16 loss; BF16 retry recovered
+03:50:42 | WARNING | Epoch 34, batch 14: non-finite FP16 loss; BF16 retry recovered
+03:50:43 | WARNING | Epoch 34, batch 15: non-finite FP16 loss; BF16 retry recovered
+03:50:44 | WARNING | Epoch 34, batch 16: non-finite FP16 loss; BF16 retry recovered
+03:50:45 | WARNING | Epoch 34, batch 17: non-finite FP16 loss; BF16 retry recovered
+03:50:47 | WARNING | Epoch 34, batch 18: non-finite FP16 loss; BF16 retry recovered
+03:50:48 | WARNING | Epoch 34, batch 19: non-finite FP16 loss; BF16 retry recovered
+03:50:51 | WARNING | Epoch 34, batch 22: non-finite FP16 loss; BF16 retry recovered
+03:50:55 | WARNING | Epoch 34, batch 27: non-finite FP16 loss; BF16 retry recovered
+03:50:57 | WARNING | Epoch 34, batch 28: non-finite FP16 loss; BF16 retry recovered
+03:51:00 | WARNING | Epoch 34, batch 31: non-finite FP16 loss; BF16 retry recovered
+03:51:01 | WARNING | Epoch 34, batch 32: non-finite FP16 loss; BF16 retry recovered
+03:51:02 | WARNING | Epoch 34, batch 33: non-finite FP16 loss; BF16 retry recovered
+03:51:04 | WARNING | Epoch 34, batch 35: non-finite FP16 loss; BF16 retry recovered
+03:51:06 | WARNING | Epoch 34, batch 36: non-finite FP16 loss; BF16 retry recovered
+03:51:07 | WARNING | Epoch 34, batch 37: non-finite FP16 loss; BF16 retry recovered
+03:51:08 | WARNING | Epoch 34, batch 38: non-finite FP16 loss; BF16 retry recovered
+03:51:09 | WARNING | Epoch 34, batch 39: non-finite FP16 loss; BF16 retry recovered
+03:51:11 | WARNING | Epoch 34, batch 41: non-finite FP16 loss; BF16 retry recovered
+03:51:13 | WARNING | Epoch 34, batch 42: non-finite FP16 loss; BF16 retry recovered
+03:51:14 | WARNING | Epoch 34, batch 43: non-finite FP16 loss; BF16 retry recovered
+03:51:16 | WARNING | Epoch 34, batch 45: non-finite FP16 loss; BF16 retry recovered
+03:51:17 | WARNING | Epoch 34, batch 46: non-finite FP16 loss; BF16 retry recovered
+03:51:20 | WARNING | Epoch 34, batch 49: non-finite FP16 loss; BF16 retry recovered
+03:51:22 | WARNING | Epoch 34, batch 50: non-finite FP16 loss; BF16 retry recovered
+03:51:23 | WARNING | Epoch 34, batch 51: non-finite FP16 loss; BF16 retry recovered
+03:51:24 | WARNING | Epoch 34, batch 52: non-finite FP16 loss; BF16 retry recovered
+03:51:25 | WARNING | Epoch 34, batch 53: non-finite FP16 loss; BF16 retry recovered
+03:51:26 | WARNING | Epoch 34, batch 54: non-finite FP16 loss; BF16 retry recovered
+03:51:30 | WARNING | Epoch 34, batch 58: non-finite FP16 loss; BF16 retry recovered
+03:51:32 | WARNING | Epoch 34, batch 59: non-finite FP16 loss; BF16 retry recovered
+03:51:33 | WARNING | Epoch 34, batch 60: non-finite FP16 loss; BF16 retry recovered
+03:51:34 | WARNING | Epoch 34, batch 61: non-finite FP16 loss; BF16 retry recovered
+Train 34/50:   1%|          | 61/9853 [03:29<2:31:15,  1.17s/batch]
+    
+
+
+
+ON ANOTHER TERMINAL: 
+(.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ nvidia-smi
+Wed Oct 28 03:51:10 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA RTX 4000 Ada Gene...    Off |   00000000:01:00.0  On |                  Off |
+| 31%   65C    P2            108W /  130W |   17623MiB /  20475MiB |    100%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            2750      G   /usr/lib/xorg/Xorg                      107MiB |
+|    0   N/A  N/A            3111      G   /usr/bin/gnome-shell                    105MiB |
+|    0   N/A  N/A            5674      G   ...rack-uuid=3190708988185955192        110MiB |
+|    0   N/A  N/A            8694      C   python                                17232MiB |
++-----------------------------------------------------------------------------------------+
 (.venv-cuda) fastlab@gup-admin-Precision-3680:~/deepFakeDetection/DeepDocForgery$ 

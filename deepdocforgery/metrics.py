@@ -19,28 +19,44 @@ def _mean(values: list[float]) -> float | None:
 
 
 def binary_auroc(scores: list[float], labels: list[int]) -> float | None:
+    """Tie-correct AUROC. Discard non-finite scores so NaNs cannot stall the loop."""
+    import math
+    import warnings
+
     if len(scores) != len(labels):
         raise ValueError("scores and labels must have equal length")
-    positives = sum(value == 1 for value in labels)
-    negatives = sum(value == 0 for value in labels)
-    if positives == 0 or negatives == 0:
+    pairs = []
+    invalid = 0
+    for score, label in zip(scores, labels):
+        if int(label) not in (0, 1):
+            raise ValueError("AUROC labels must be 0 or 1")
+        value = float(score)
+        if not math.isfinite(value):
+            invalid += 1
+            continue
+        pairs.append((value, int(label)))
+    if invalid:
+        warnings.warn(
+            f"AUROC omitted {invalid} non-finite scores; inspect model numerics",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    positives = sum(label for _, label in pairs)
+    negatives = len(pairs) - positives
+    if not positives or not negatives:
         return None
-    order = sorted(range(len(scores)), key=lambda index: scores[index], reverse=True)
-    true_positive = false_positive = 0
-    previous_tpr = previous_fpr = area = 0.0
-    index = 0
-    while index < len(order):
-        threshold = scores[order[index]]
-        while index < len(order) and scores[order[index]] == threshold:
-            label = labels[order[index]]
-            true_positive += int(label == 1)
-            false_positive += int(label == 0)
-            index += 1
-        tpr = true_positive / positives
-        fpr = false_positive / negatives
-        area += (fpr - previous_fpr) * (tpr + previous_tpr) * 0.5
-        previous_tpr, previous_fpr = tpr, fpr
-    return area
+    pairs.sort(key=lambda entry: entry[0])
+    positive_rank_total = 0.0
+    i = 0
+    while i < len(pairs):
+        j = i + 1
+        while j < len(pairs) and pairs[j][0] == pairs[i][0]:
+            j += 1
+        average_rank = ((i + 1) + j) / 2.0
+        positive_rank_total += average_rank * sum(label for _, label in pairs[i:j])
+        i = j
+    area = (positive_rank_total - positives * (positives + 1) / 2.0) / (positives * negatives)
+    return max(0.0, min(1.0, area))
 
 
 @dataclass
